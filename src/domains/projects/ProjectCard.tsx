@@ -3,12 +3,15 @@ import { ArrowUpRight, Github, ImageOff } from "lucide-react";
 import { Project } from "@/types/project";
 import { cn } from "@/lib/utils";
 import Button from "@/components/Button";
+import LikeButton from "@/components/LikeButton";
 
 interface ProjectCardProps {
   project: Project;
+  initialLikes?: number;
+  initialHasLiked?: boolean;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, initialLikes = 0, initialHasLiked = false }: ProjectCardProps) {
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-lg hover:border-primary/50">
       
@@ -30,6 +33,13 @@ export default function ProjectCard({ project }: ProjectCardProps) {
              <span className="font-mono text-xs opacity-70">Sin imagen</span>
           </div>
         )}
+
+        {/* Like Button (Floating) */}
+        <div className="absolute top-3 right-3 z-10">
+          <div className="scale-90 shadow-sm backdrop-blur-sm bg-background/80 rounded-full">
+            <LikeButton projectId={project.id} initialLikes={initialLikes} initialHasLiked={initialHasLiked} />
+          </div>
+        </div>
         
         {/* Overlay al hacer hover (Efecto UX Premium) */}
         <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center gap-4 backdrop-blur-[2px]">

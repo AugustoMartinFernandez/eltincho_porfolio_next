@@ -1,10 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+interface MainLayoutProps {
+  children: React.ReactNode;
+  navbar: React.ReactNode;
+  footer: React.ReactNode;
+}
+
+export default function MainLayout({ children, navbar, footer }: MainLayoutProps) {
   const pathname = usePathname();
   
   // Detectar si estamos en el panel de admin o en el login
@@ -23,12 +27,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Si es la web pública, mostramos todo
   return (
     <>
-      <Navbar />
+      {navbar}
       {/* pt-20 compensa la altura del navbar fijo solo en la web pública */}
       <main className="flex-1 pt-20">
         {children}
       </main>
-      <Footer />
+      {footer}
     </>
   );
 }

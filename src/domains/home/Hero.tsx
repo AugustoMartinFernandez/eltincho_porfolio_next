@@ -4,106 +4,158 @@ import { motion } from "framer-motion";
 import { ArrowRight, Download, Github, Linkedin } from "lucide-react";
 import Button from "@/components/Button";
 import Link from "next/link";
+import { WorkStatus } from "@/types/about";
 
-export default function Hero() {
+export default function Hero({ workStatus }: { workStatus?: WorkStatus }) {
   return (
-    <section className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden py-12 md:py-24 lg:py-32">
+    <section className="relative min-h-[calc(100dvh-5rem)] flex items-center justify-center overflow-hidden pt-10 pb-16 md:py-24 lg:py-32">
+      {/* Contenedor principal con Z-index corregido */}
       <div className="container px-4 md:px-6 relative z-10 flex flex-col md:flex-row items-center gap-12">
         
-        {/* Columna de Texto */}
+        {/* --- Columna de Texto --- */}
         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="space-y-4"
           >
-            <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-medium">
-              Disponible para trabajar
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter sm:text-5xl xl:text-7xl/none bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              Ingeniería de Software <br />
-              <span className="text-primary">con Propósito.</span>
+            {workStatus === 'open_to_work' && (
+              <div className="inline-block rounded-lg bg-emerald-500/10 px-3 py-1 text-sm text-emerald-600 border border-emerald-500/20 font-medium">
+                Disponible para trabajar
+              </div>
+            )}
+            {workStatus === 'hiring' && (
+              <div className="inline-block rounded-lg bg-purple-500/10 px-3 py-1 text-sm text-purple-600 border border-purple-500/20 font-medium">
+                Contratando Talento
+              </div>
+            )}
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter xl:text-7xl/none bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
+              Desarrollo Web & <br />
+              <span className="text-primary">Soluciones Full Stack.</span>
             </h1>
-            <p className="max-w-[600px] text-muted-foreground md:text-xl leading-relaxed">
-              Diseño y construyo soluciones digitales robustas, escalables y centradas en el usuario. Especializado en arquitectura Full Stack moderna.
+            <p className="max-w-150 text-muted-foreground md:text-xl leading-relaxed">
+              Enfocado en construir aplicaciones modernas, rápidas y escalables. Transformo lógica compleja en experiencias de usuario fluidas.
             </p>
           </motion.div>
 
-          {/* Botones de Acción */}
+{/* Botones de Acción */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 min-w-[200px]"
+            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+            className="flex flex-col sm:flex-row gap-4 w-auto"
           >
-            <Link href="/projects">
-              <Button size="lg" className="w-full sm:w-auto gap-2">
+            <Link href="/projects" className="w-auto">
+              <Button size="lg" className="w-auto gap-2 px-8">
                 Ver Proyectos <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/contact">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+            <Link href="/contact" className="w-auto">
+              <Button variant="outline" size="lg" className="w-auto px-8">
                 Contactame
               </Button>
             </Link>
           </motion.div>
 
-          {/* Redes Sociales (Pequeña barra) */}
+          {/* Redes Sociales */}
           <motion.div
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
              transition={{ duration: 0.5, delay: 0.4 }}
              className="flex items-center gap-4 text-muted-foreground"
           >
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">
+            <a href="https://github.com/AugustoMartinFernandez" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors p-1">
               <Github className="h-6 w-6" />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">
+            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors p-1">
               <Linkedin className="h-6 w-6" />
             </a>
             <span className="h-4 w-px bg-border mx-2"></span>
-            <a href="/cv.pdf" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-2">
+            <a href="/cv.pdf" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-2 p-1">
               Descargar CV <Download className="h-4 w-4" />
             </a>
           </motion.div>
         </div>
 
-        {/* Columna Visual / 3D Placeholder */}
+        {/* --- Columna Visual / Abstract Data Matrix (Optimizado) --- */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7 }}
-          className="flex-1 w-full max-w-[500px] aspect-square relative"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="flex-1 w-full max-w-70 h-70 -my-5 md:my-0 md:h-auto md:max-w-125 md:aspect-square relative flex items-center justify-center"
         >
-          {/* Este es el placeholder para <model-viewer> */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary rounded-3xl border border-border/50 flex items-center justify-center backdrop-blur-sm overflow-hidden group">
-            
-            {/* Elemento decorativo animado (Grid) */}
-            <div className="absolute inset-0 opacity-20" 
-                 style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, var(--foreground) 1px, transparent 0)', backgroundSize: '24px 24px' }}>
-            </div>
-            
-            <div className="text-center p-6 space-y-2 relative z-10">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary animate-pulse">
-                <span className="text-2xl font-bold">3D</span>
-              </div>
-              <p className="font-mono text-sm text-muted-foreground">
-                &lt;model-viewer&gt;<br/>
-                Asset Pending...
-              </p>
-            </div>
+          {/* 1. Fondo Atmosférico (Estático para performance) */}
+          <div className="absolute inset-0 bg-linear-to-tr from-primary/20 via-transparent to-secondary/20 blur-[60px] rounded-full opacity-60" />
 
-            {/* Efecto de brillo al hover */}
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {/* 2. Estructura Central (Cubo) */}
+          <div className="relative w-64 h-64" style={{ perspective: "1000px" }}>
+            <motion.div
+              className="w-full h-full relative preserve-3d will-change-transform"
+              style={{ transformStyle: "preserve-3d" }}
+              animate={{ rotateX: [0, 360], rotateY: [0, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              {/* Caras del cubo: Eliminado backdrop-blur para evitar lag */}
+              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "translateZ(40px)" }} />
+              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "rotateY(90deg) translateZ(40px)" }} />
+              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "rotateX(90deg) translateZ(40px)" }} />
+              
+              {/* Núcleo Pulsante */}
+              <motion.div 
+                className="absolute inset-20 bg-primary/30 rounded-full blur-xl shadow-[0_0_30px_rgba(var(--primary),0.4)]"
+                animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.6, 0.9, 0.6] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </motion.div>
           </div>
+
+          {/* 3. Elementos Flotantes (Optimizados: Will Change) */}
+          <motion.div
+            className="absolute top-[15%] left-[15%] w-12 h-12 border border-secondary/30 bg-card/50 rounded-xl flex items-center justify-center shadow-lg z-20 will-change-transform"
+            animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="w-2.5 h-2.5 bg-secondary rounded-full opacity-80" />
+          </motion.div>
+
+          <motion.div
+            className="absolute bottom-[20%] right-[10%] w-16 h-16 border border-primary/30 bg-card/50 rounded-full flex items-center justify-center shadow-xl z-20 will-change-transform"
+            animate={{ y: [10, -10, 10] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          >
+            <div className="w-3 h-3 bg-primary rounded-sm rotate-45 opacity-80" />
+          </motion.div>
+
+          <motion.div
+            className="absolute top-[10%] right-[25%] w-3 h-3 bg-primary rounded-full shadow-[0_0_15px_currentColor] will-change-transform"
+            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* 4. Líneas de Conexión (SVG liviano) */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-40">
+            <motion.line
+              x1="30%" y1="30%" x2="50%" y2="50%"
+              stroke="currentColor" strokeWidth="1" className="text-secondary" strokeDasharray="4 4"
+              animate={{ strokeDashoffset: [0, -8] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.line
+              x1="70%" y1="70%" x2="50%" y2="50%"
+              stroke="currentColor" strokeWidth="1" className="text-primary"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: [0, 1, 0], opacity: [0, 1, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </svg>
         </motion.div>
 
       </div>
 
-      {/* Background Decorativo Sutil */}
-      <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/3 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl opacity-50" />
-      <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/3 w-[500px] h-[500px] bg-secondary rounded-full blur-3xl opacity-50" />
+      {/* Background Decorativo (Estático para evitar repintes) */}
+      <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/3 w-75 md:w-125 h-75 md:h-125 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/3 w-75 md:w-125 h-75 md:h-125 bg-secondary/5 rounded-full blur-3xl" />
     </section>
   );
 }

@@ -5,12 +5,15 @@ import { ArrowLeft, Github, Globe, Calendar, Tag } from "lucide-react";
 import { Project } from "@/types/project";
 import Button from "@/components/Button";
 import { cn } from "@/lib/utils";
+import LikeButton from "@/components/LikeButton";
 
 interface ProjectDetailProps {
   project: Project;
+  initialLikes: number;
+  initialHasLiked: boolean;
 }
 
-export default function ProjectDetail({ project }: ProjectDetailProps) {
+export default function ProjectDetail({ project, initialLikes, initialHasLiked }: ProjectDetailProps) {
   return (
     <article className="min-h-screen bg-background pb-20">
       
@@ -49,6 +52,15 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
             <p className="text-xl text-muted-foreground max-w-2xl">
               {project.summary}
             </p>
+
+            {/* Like Button */}
+            <div className="pt-2">
+              <LikeButton 
+                projectId={project.id} 
+                initialLikes={initialLikes} 
+                initialHasLiked={initialHasLiked} 
+              />
+            </div>
 
             <div className="flex flex-wrap gap-4 pt-4">
               {project.demo_url && (

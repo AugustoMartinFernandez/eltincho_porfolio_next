@@ -1,19 +1,47 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import ProjectCard from "@/domains/projects/ProjectCard";
 import { Project } from "@/types/project";
 import { AlertCircle } from "lucide-react";
 
 // Convertimos el componente en async para hacer fetching del lado del servidor (RSC)
 export default async function ProjectsPage() {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("portfolio_session")?.value;
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
   
   // 1. Llamada real a Supabase
   const { data: projects, error } = await supabase
     .from('projects')
-    .select('*')
+    .select('*, project_likes(count)') // Traemos el conteo de likes
     .eq('visible', true) // Solo mostrar los visibles
     .order('created_at', { ascending: false }); // Los más nuevos primero
 
-  // 2. Manejo de errores básico
+  // 2. Obtener likes del usuario actual (si tiene sesión)
+  let userLikedIds: string[] = [];
+  if (sessionId) {
+    const { data: userLikes } = await supabase
+      .from('project_likes')
+      .select('project_id')
+      .eq('anonymous_id', sessionId);
+    
+    if (userLikes) {
+      userLikedIds = userLikes.map((item: any) => item.project_id);
+    }
+  }
+
+  // 3. Manejo de errores básico
   if (error) {
     console.error("Error fetching projects:", error);
     return (
@@ -42,9 +70,14 @@ export default async function ProjectsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Validamos que haya proyectos antes de mapear */}
         {projects && projects.length > 0 ? (
-          projects.map((project) => (
+          projects.map((project: any) => (
             // Forzamos el tipado porque Supabase devuelve JSONB como 'any' a veces
-            <ProjectCard key={project.id} project={project as unknown as Project} />
+            <ProjectCard 
+              key={project.id} 
+              project={project as unknown as Project} 
+              initialLikes={project.project_likes?.[0]?.count || 0}
+              initialHasLiked={userLikedIds.includes(project.id)}
+            />
           ))
         ) : (
           <p className="text-muted-foreground col-span-full py-10 text-center">

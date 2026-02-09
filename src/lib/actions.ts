@@ -2,6 +2,9 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { randomUUID } from "crypto";
 
 // Definimos el estado inicial del formulario para el hook useFormState
 export type FormState = {
@@ -49,4 +52,48 @@ export async function sendContactMessage(prevState: FormState, formData: FormDat
 
   // 5. Retornar éxito
   return { message: "¡Mensaje recibido! Te contactaré pronto.", success: true };
+}
+
+export async function toggleProjectLike(projectId: string) {
+  const cookieStore = await cookies();
+  let sessionId = cookieStore.get("portfolio_session")?.value;
+
+  // 1. Gestión de Sesión Anónima
+  if (!sessionId) {
+    sessionId = randomUUID();
+    cookieStore.set("portfolio_session", sessionId, {
+      httpOnly: true,
+      secure: true, // Asegura que solo viaje en HTTPS
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 365, // 1 año
+      path: "/",
+    });
+  }
+
+  // 2. Verificar existencia
+  const { data: existingLike } = await supabase
+    .from("project_likes")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("anonymous_id", sessionId)
+    .single();
+
+  let isLiked = false;
+
+  if (existingLike) {
+    await supabase.from("project_likes").delete().eq("id", existingLike.id);
+    isLiked = false;
+  } else {
+    await supabase.from("project_likes").insert({ project_id: projectId, anonymous_id: sessionId });
+    isLiked = true;
+  }
+
+  // 3. Obtener conteo actualizado
+  const { count } = await supabase
+    .from("project_likes")
+    .select("*", { count: "exact", head: true })
+    .eq("project_id", projectId);
+
+  revalidatePath("/projects/[slug]", "page");
+  return { success: true, isLiked, likesCount: count || 0 };
 }

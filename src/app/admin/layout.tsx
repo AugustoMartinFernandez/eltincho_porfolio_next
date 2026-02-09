@@ -9,21 +9,23 @@ import {
   MessageSquare, 
   Settings, 
   LogOut, 
-  Code2
+  Code2,
+  User // <--- Agregamos este icono
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
 import Button from "@/components/Button";
 import { motion, AnimatePresence } from "framer-motion";
 
+// AGREGAMOS EL LINK "PERFIL" AQUÍ
 const adminLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Perfil (Sobre mí)", href: "/admin/about", icon: User }, // <--- NUEVO LINK
   { name: "Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Mensajes", href: "/admin/messages", icon: MessageSquare },
-  { name: "Configuración", href: "/admin/settings", icon: Settings },
+  // { name: "Configuración", href: "/admin/settings", icon: Settings }, // (Opcional, si aun no existe la pagina, dejalo o comentalo)
 ];
 
-// CORRECCIÓN 1: Agregamos "as const" para que TS sepa que "easeInOut" es un literal válido
 const menuTransition = { duration: 0.3, ease: "easeInOut" } as const;
 
 export default function AdminLayout({
@@ -116,8 +118,7 @@ export default function AdminLayout({
                 <Code2 className="h-5 w-5 text-primary" />
               </div>
               
-              {/* CORRECCIÓN 2: Usamos bg-linear-to-r para Tailwind v4 */}
-              <span className="bg-linear-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-in fade-in font-extrabold tracking-tight">
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-in fade-in font-extrabold tracking-tight">
                 Admin Panel
               </span>
             </div>
