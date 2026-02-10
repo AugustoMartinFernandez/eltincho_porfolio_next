@@ -1,12 +1,30 @@
 "use server";
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient"; // Cliente público (para crear)
+import { createServerClient } from "@supabase/ssr"; // Cliente privado (para administrar)
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
-// Definimos el estado inicial del formulario para el hook useFormState
+// --- HELPER DE SEGURIDAD ---
+// Esta función crea un cliente de Supabase que "sabe" quién está logueado
+async function createAuthClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+}
+
+// Definimos el estado inicial del formulario de contacto
 export type FormState = {
   message: string;
   errors?: {
@@ -17,20 +35,17 @@ export type FormState = {
   success?: boolean;
 };
 
+// --- CONTACTO (Público - Usa cliente estático) ---
 export async function sendContactMessage(prevState: FormState, formData: FormData): Promise<FormState> {
-  // 1. Extraer datos
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const message = formData.get("message") as string;
-  const honeypot = formData.get("phone"); // Campo oculto anti-spam
+  const honeypot = formData.get("phone");
 
-  // 2. Validación Anti-Spam (Honeypot)
-  // Si el bot llenó el campo "phone" (que estará oculto), rechazamos silenciosamente
   if (honeypot) {
-    return { message: "Mensaje enviado", success: true }; // Mentimos al bot
+    return { message: "Mensaje enviado", success: true };
   }
 
-  // 3. Validación básica de datos
   const errors: FormState["errors"] = {};
   if (!name || name.length < 2) errors.name = ["El nombre es muy corto."];
   if (!email || !email.includes("@")) errors.email = ["Email inválido."];
@@ -40,7 +55,6 @@ export async function sendContactMessage(prevState: FormState, formData: FormDat
     return { message: "Error en el formulario", errors, success: false };
   }
 
-  // 4. Guardar en Supabase
   const { error } = await supabase
     .from("contact_messages")
     .insert({ name, email, message });
@@ -50,27 +64,25 @@ export async function sendContactMessage(prevState: FormState, formData: FormDat
     return { message: "Error al guardar el mensaje. Intenta de nuevo.", success: false };
   }
 
-  // 5. Retornar éxito
   return { message: "¡Mensaje recibido! Te contactaré pronto.", success: true };
 }
 
+// --- LIKES (Público - Usa cliente estático) ---
 export async function toggleProjectLike(projectId: string) {
   const cookieStore = await cookies();
   let sessionId = cookieStore.get("portfolio_session")?.value;
 
-  // 1. Gestión de Sesión Anónima
   if (!sessionId) {
     sessionId = randomUUID();
     cookieStore.set("portfolio_session", sessionId, {
       httpOnly: true,
-      secure: true, // Asegura que solo viaje en HTTPS
+      secure: true,
       sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 365, // 1 año
+      maxAge: 60 * 60 * 24 * 365,
       path: "/",
     });
   }
 
-  // 2. Verificar existencia
   const { data: existingLike } = await supabase
     .from("project_likes")
     .select("id")
@@ -88,7 +100,6 @@ export async function toggleProjectLike(projectId: string) {
     isLiked = true;
   }
 
-  // 3. Obtener conteo actualizado
   const { count } = await supabase
     .from("project_likes")
     .select("*", { count: "exact", head: true })
@@ -96,4 +107,160 @@ export async function toggleProjectLike(projectId: string) {
 
   revalidatePath("/projects/[slug]", "page");
   return { success: true, isLiked, likesCount: count || 0 };
+}
+
+// --- SHARES (Público) ---
+export async function incrementProjectShares(projectId: string) {
+  const { error } = await supabase.rpc('increment_share_count', { 
+    row_id: projectId 
+  });
+
+  if (error) {
+    console.error("Error incrementing shares:", error);
+    return { success: false };
+  }
+  return { success: true };
+}
+
+// --- TESTIMONIOS (Creación Pública) ---
+export type TestimonialState = {
+  message: string;
+  success?: boolean;
+  errors?: {
+    name?: string[];
+    email?: string[]; // Nuevo campo de error
+    content?: string[];
+  };
+};
+
+export async function createTestimonial(prevState: TestimonialState, formData: FormData): Promise<TestimonialState> {
+  const name = formData.get("name") as string;
+  const email = formData.get("email") as string; // Capturamos email
+  const relationship = formData.get("relationship") as string;
+  const role_or_company = formData.get("role_or_company") as string;
+  const project_id = formData.get("project_id") as string;
+  const content = formData.get("content") as string;
+  const rating = Number(formData.get("rating"));
+  const avatarFile = formData.get("avatar") as File | null;
+
+  // 1. Validaciones
+  const errors: TestimonialState['errors'] = {};
+  
+  if (!name || name.length < 2) errors.name = ["El nombre es obligatorio."];
+  
+  // Validación estricta de Email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    errors.email = ["Por favor, ingresa un correo válido."];
+  }
+
+  if (!content || content.length < 10) errors.content = ["El testimonio es muy corto."];
+  
+  if (Object.keys(errors).length > 0) {
+    return { message: "Por favor corrige los errores.", errors, success: false };
+  }
+
+  if (!relationship) return { message: "Debes seleccionar quién eres.", success: false };
+
+  let avatar_url = null;
+
+  // 2. Subir Avatar
+  if (avatarFile && avatarFile.size > 0) {
+    try {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `avatar_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `testimonials/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('portfolio')
+        .upload(filePath, avatarFile);
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from('portfolio').getPublicUrl(filePath);
+        avatar_url = data.publicUrl;
+      }
+    } catch (error) {
+      console.error("Error subiendo avatar:", error);
+    }
+  }
+
+  // 3. Insertar en DB con email
+  const { error } = await supabase.from("testimonials").insert({
+    name,
+    email, // Guardamos el email
+    relationship,
+    role_or_company: role_or_company || null,
+    project_id: project_id || null,
+    content,
+    rating: rating || 5,
+    avatar_url,
+    is_approved: false
+  });
+
+  if (error) {
+    console.error("Error creando testimonio:", error);
+    return { message: "Error al guardar. Intenta nuevamente.", success: false };
+  }
+
+  revalidatePath("/admin/testimonials"); 
+  return { message: "¡Gracias! Tu testimonio está pendiente de aprobación.", success: true };
+}
+
+// --- TESTIMONIOS (Gestión Admin - REQUIERE AUTH) ---
+
+// Acción de Admin: Aprobar
+export async function approveTestimonial(id: string) {
+  // 1. Usamos el cliente autenticado (NO el público)
+  const authSupabase = await createAuthClient();
+  
+  const { error } = await authSupabase
+    .from("testimonials")
+    .update({ is_approved: true })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error aprobando:", error);
+    throw new Error("No pudimos aprobar el testimonio. Verifica tus permisos.");
+  }
+
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/"); 
+}
+
+// Acción de Admin: Eliminar
+export async function deleteTestimonial(id: string) {
+  // 1. Usamos el cliente autenticado (NO el público)
+  const authSupabase = await createAuthClient();
+
+  const { error } = await authSupabase
+    .from("testimonials")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error eliminando:", error);
+    throw new Error("No pudimos eliminar el testimonio. Verifica tus permisos.");
+  }
+
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
+}
+
+// Acción de Admin: Destacar/No destacar
+export async function toggleFeaturedTestimonial(id: string, currentState: boolean) {
+  // 1. Usamos el cliente autenticado
+  const authSupabase = await createAuthClient();
+
+  const { error } = await authSupabase
+    .from("testimonials")
+    .update({ featured: !currentState })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error destacando:", error);
+    throw new Error("No pudimos actualizar el estado destacado.");
+  }
+
+  revalidatePath("/admin/testimonials");
+  revalidatePath("/");
 }

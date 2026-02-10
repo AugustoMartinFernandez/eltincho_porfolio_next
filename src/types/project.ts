@@ -1,6 +1,7 @@
 export interface Project {
   id: string;
   title: string;
+  share_count: number; // <--- AGREGAR ESTO
   slug: string;
   summary: string;
   description_md: string; // <-- Faltaba esto

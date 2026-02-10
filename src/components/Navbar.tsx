@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Code2 } from "lucide-react";
+import { Menu, X, Code2, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Button from "@/components/Button";
@@ -11,12 +11,22 @@ import Button from "@/components/Button";
 const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Proyectos", href: "/projects" },
-  { name: "Sobre mí", href: "/about" },
+  { name: "Testimonios", href: "/testimonials" },
+  { 
+    name: "Sobre mí", 
+    href: "/about",
+    children: [
+      { name: "Perfil General", href: "/about" },
+      { name: "Educación", href: "/about#education" },
+      { name: "Stack Tecnológico", href: "/about#tech-stack" },
+    ]
+  },
 ];
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
 
   // Detectar scroll para cambiar estilo del navbar
@@ -94,18 +104,68 @@ export default function Navbar() {
           >
             <nav className="flex flex-col gap-1 p-4 container mx-auto">
               {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                    pathname === link.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                <div key={link.name}>
+                  {link.children ? (
+                    // Lógica de Acordeón para items con hijos
+                    <div className="flex flex-col">
+                      <button
+                        onClick={() => setExpandedItem(expandedItem === link.name ? null : link.name)}
+                        className={cn(
+                          "flex w-full items-center justify-between px-4 py-3 rounded-md text-sm font-medium transition-colors",
+                          pathname.startsWith(link.href)
+                            ? "text-primary"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        {link.name}
+                        <ChevronDown 
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200", 
+                            expandedItem === link.name ? "rotate-180" : ""
+                          )} 
+                        />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {expandedItem === link.name && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-1 pl-4 pb-2">
+                              {link.children.map((child) => (
+                                <Link
+                                  key={child.name}
+                                  href={child.href}
+                                  onClick={() => setIsOpen(false)}
+                                  className="block px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors border-l border-border ml-2"
+                                >
+                                  {child.name}
+                                </Link>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    // Link estándar sin hijos
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        "block px-4 py-3 rounded-md text-sm font-medium transition-colors",
+                        pathname === link.href
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      {link.name}
+                    </Link>
                   )}
-                >
-                  {link.name}
-                </Link>
+                </div>
               ))}
               <div className="pt-2 mt-2 border-t border-border">
                 <Link href="/contact" className="block w-full">

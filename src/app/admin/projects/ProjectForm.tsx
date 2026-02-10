@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createBrowserClient } from "@supabase/ssr";
-import { Loader2, Save, Image as ImageIcon, X, Plus, Cpu } from "lucide-react";
+import { Loader2, Save, Image as ImageIcon, X, Plus, Cpu, Trash2, Upload } from "lucide-react";
 import Button from "@/components/Button";
 import { Project } from "@/types/project";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export default function ProjectForm({ project }: { project?: Project }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   
   // Estado local para el input de tecnologías
   const [newTech, setNewTech] = useState("");
@@ -31,6 +32,7 @@ export default function ProjectForm({ project }: { project?: Project }) {
     visible: project?.visible || false,
     tech_stack: project?.tech_stack || [],
     tags: project?.tags || [],
+    gallery_urls: project?.gallery_urls || [],
   });
 
   // Cliente Supabase
@@ -105,6 +107,46 @@ export default function ProjectForm({ project }: { project?: Project }) {
     } finally {
       setUploading(false);
     }
+  };
+
+  // Subida de Galería (Múltiple)
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploadingGallery(true);
+    const files = Array.from(e.target.files);
+    const newUrls: string[] = [];
+
+    try {
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `gallery_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('projects')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('projects').getPublicUrl(filePath);
+        newUrls.push(data.publicUrl);
+      }
+
+      setFormData((prev) => ({ ...prev, gallery_urls: [...(prev.gallery_urls || []), ...newUrls] }));
+    } catch (error) {
+      console.error('Error uploading gallery images:', error);
+      alert('Error al subir imágenes a la galería');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      gallery_urls: prev.gallery_urls?.filter((_, i) => i !== index)
+    }));
   };
 
   // Guardar (Create / Update)
@@ -337,6 +379,42 @@ export default function ProjectForm({ project }: { project?: Project }) {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* NUEVA SECCIÓN: Galería */}
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              Galería
+            </h3>
+            
+            <div className="grid grid-cols-3 gap-2">
+              {formData.gallery_urls?.map((url, index) => (
+                <div key={index} className="relative aspect-square rounded-md overflow-hidden border border-border group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveGalleryImage(index)}
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+              
+              <label className="aspect-square rounded-md border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors text-muted-foreground hover:text-primary">
+                {uploadingGallery ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="h-6 w-6 mb-1" />
+                    <span className="text-[10px] font-medium">Agregar</span>
+                  </>
+                )}
+                <input type="file" multiple accept="image/*" className="hidden" onChange={handleGalleryUpload} disabled={uploadingGallery} />
+              </label>
             </div>
           </div>
 

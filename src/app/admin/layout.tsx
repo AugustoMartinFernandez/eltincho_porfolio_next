@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut, 
   Code2,
-  User // <--- Agregamos este icono
+  User,
+  MessageSquareHeart
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
@@ -19,11 +20,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // AGREGAMOS EL LINK "PERFIL" AQUÍ
 const adminLinks = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Perfil (Sobre mí)", href: "/admin/about", icon: User }, // <--- NUEVO LINK
+{ name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Perfil (Sobre mí)", href: "/admin/about", icon: User },
   { name: "Proyectos", href: "/admin/projects", icon: FolderKanban },
+  { name: "Testimonios", href: "/admin/testimonials", icon: MessageSquareHeart },
   { name: "Mensajes", href: "/admin/messages", icon: MessageSquare },
-  // { name: "Configuración", href: "/admin/settings", icon: Settings }, // (Opcional, si aun no existe la pagina, dejalo o comentalo)
 ];
 
 const menuTransition = { duration: 0.3, ease: "easeInOut" } as const;

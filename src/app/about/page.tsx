@@ -222,7 +222,7 @@ export default async function AboutPage() {
             )}
 
             {/* 3. EDUCACIÓN (Grid Cards) */}
-            <section className="space-y-6">
+            <section id="education" className="space-y-6 scroll-mt-24">
               <h2 className="text-2xl font-bold flex items-center gap-2 border-b border-border pb-2">
                 <GraduationCap className="h-5 w-5 text-primary" /> Educación
               </h2>
@@ -231,7 +231,7 @@ export default async function AboutPage() {
             </section>
 
             {/* --- NUEVA SECCIÓN: TECH STACK --- */}
-            <section className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            <section id="tech-stack" className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 scroll-mt-24">
                <h2 className="text-2xl font-bold flex items-center gap-2 border-b border-border pb-2">
                   <Cpu className="h-5 w-5 text-primary" /> Stack Tecnológico
                </h2>
