@@ -1,8 +1,43 @@
 import Link from "next/link";
-import { Github, Linkedin, Mail, ArrowUpRight, Code2, Heart, Coffee } from "lucide-react";
+import { 
+  Github, 
+  Linkedin, 
+  Mail, 
+  Code2, 
+  Heart, 
+  Coffee, 
+  Home, 
+  User, 
+  Briefcase, 
+  MessageSquareHeart, 
+  ChevronRight,
+  Twitter,
+  Instagram,
+  Facebook,
+  Youtube,
+  Lock
+} from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import { WorkStatus } from "@/types/about";
+import { WorkStatus, SocialLinks } from "@/types/about";
 import { unstable_noStore as noStore } from "next/cache";
+
+const NAV_LINKS = [
+  { name: "Inicio", href: "/", icon: Home },
+  { name: "Sobre Mí", href: "/about", icon: User },
+  { name: "Proyectos", href: "/projects", icon: Briefcase },
+  { name: "Testimonios", href: "/testimonials", icon: MessageSquareHeart },
+  { name: "Contacto", href: "/contact", icon: Mail },
+];
+
+const SOCIAL_ICONS: Record<string, any> = {
+  github: Github,
+  linkedin: Linkedin,
+  twitter: Twitter,
+  instagram: Instagram,
+  facebook: Facebook,
+  youtube: Youtube,
+  email: Mail,
+};
 
 export default async function Footer() {
   noStore();
@@ -14,8 +49,9 @@ export default async function Footer() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data: profile } = await supabase.from("about_me").select("work_status").single();
+  const { data: profile } = await supabase.from("about_me").select("work_status, social_links").single();
   const status = profile?.work_status as WorkStatus | undefined;
+  const socialLinks = (profile?.social_links as SocialLinks) || {};
 
   return (
     <footer className="relative border-t border-border/50 bg-background/60 backdrop-blur-xl pt-16 pb-8">
@@ -65,41 +101,63 @@ export default async function Footer() {
           </div>
 
           {/* COLUMNA 2: NAVEGACIÓN */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Explorar</h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <Link href="/projects" className="hover:text-primary transition-colors flex items-center gap-1 group">
-                  Proyectos 
-                  <ArrowUpRight className="h-3 w-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-primary transition-colors">
-                  Trayectoria & Bio
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-primary transition-colors">
-                  Contacto
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="hover:text-primary transition-colors">
-                  Admin Panel
-                </Link>
-              </li>
-            </ul>
+          <div className="flex flex-col gap-4">
+            <h3 className="font-bold text-lg text-foreground tracking-tight">Explorar</h3>
+            <nav className="flex flex-col gap-3">
+              {NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 hover:translate-x-1 text-sm w-fit"
+                  >
+                    <Icon className="h-4 w-4 transition-colors group-hover:text-primary" />
+                    <span>{link.name}</span>
+                    <ChevronRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-primary" />
+                  </Link>
+                );
+              })}
+              <Link
+                href="/login"
+                className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 hover:translate-x-1 text-sm w-fit"
+                data-umami-event="Security: Admin Link Clicked"
+              >
+                <Lock className="h-4 w-4 transition-colors group-hover:text-primary" />
+                <span>Panel Admin</span>
+                <ChevronRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-primary" />
+              </Link>
+            </nav>
           </div>
 
           {/* COLUMNA 3: SOCIAL */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Conectar</h3>
-            <div className="flex flex-col gap-3">
-              <SocialItem href="https://github.com/AugustoMartinFernandez" icon={Github} label="Github" />
-              <SocialItem href="https://linkedin.com" icon={Linkedin} label="LinkedIn" />
-              <SocialItem href="mailto:hola@tinchodev.com" icon={Mail} label="Email" />
-              {/* <SocialItem href="https://twitter.com" icon={Twitter} label="Twitter / X" /> */}
+            <h3 className="font-bold text-lg text-foreground tracking-tight">Conectar</h3>
+            <div className="flex items-center gap-3 flex-wrap">
+              {Object.entries(socialLinks).map(([platform, url]) => {
+                if (!url) return null;
+                const Icon = SOCIAL_ICONS[platform.toLowerCase()];
+                if (!Icon) return null;
+
+                const href = platform === 'email' && !url.startsWith('mailto:') ? `mailto:${url}` : url;
+
+                return (
+                  <a 
+                    key={platform} 
+                    href={href} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    aria-label={platform}
+                    className="p-2.5 rounded-full bg-secondary/50 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-primary/20"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </a>
+                );
+              })}
+              
+              {Object.keys(socialLinks).length === 0 && (
+                 <p className="text-sm text-muted-foreground italic">No hay redes sociales públicas.</p>
+              )}
             </div>
           </div>
 
@@ -121,9 +179,20 @@ export default async function Footer() {
 
         {/* BOTTOM BAR */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground text-center md:text-left">
-            © {currentYear} TinchoDev. Todos los derechos reservados.
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground text-center md:text-left">
+              © {currentYear} TinchoDev. Todos los derechos reservados.
+            </p>
+            {/* TRAMPA DE SEGURIDAD: Icono Lock sutil */}
+            <Link 
+              href="/login" 
+              className="text-muted-foreground/10 hover:text-red-500 transition-colors p-1"
+              aria-label="Admin Access"
+              data-umami-event="Security: Admin Link Clicked"
+            >
+              <Lock className="h-3 w-3" />
+            </Link>
+          </div>
           
 <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-mono">
             <span>Codeado con</span>
@@ -137,23 +206,6 @@ export default async function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-// Subcomponente para items sociales
-function SocialItem({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
-  return (
-    <a 
-      href={href} 
-      target="_blank" 
-      rel="noreferrer" 
-      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group w-fit"
-    >
-      <div className="p-1.5 rounded-md bg-secondary/50 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-        <Icon className="h-4 w-4" />
-      </div>
-      {label}
-    </a>
   );
 }
 

@@ -78,3 +78,24 @@
       scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* --- MARQUEE ANIMATION --- */
+@layer utilities {
+  .animation-pause:hover,
+  .animation-pause:focus-within {
+    animation-play-state: paused !important;
+  }
+}
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - 1.5rem)); /* 1.5rem = gap-6 */ }
+}
+
+.animate-infinite-scroll {
+  animation: scroll var(--speed, 40s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-infinite-scroll { animation-play-state: paused !important; }
+}

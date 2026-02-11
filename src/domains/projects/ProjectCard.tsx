@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowUpRight, Github, ImageOff } from "lucide-react";
 import { Project } from "@/types/project";
 import { cn } from "@/lib/utils";
-import Button from "@/components/Button";
 import LikeButton from "@/components/LikeButton";
 
 interface ProjectCardProps {
@@ -18,36 +17,36 @@ export default function ProjectCard({ project, initialLikes = 0, initialHasLiked
       {/* 1. Imagen de portada REAL */}
       <div className="relative aspect-video w-full overflow-hidden bg-muted group-hover:scale-[1.02] transition-transform duration-500">
         
-        {project.cover_url ? (
-          // Usamos img estándar para evitar configurar dominios en next.config.js por ahora
-          // object-cover asegura que la imagen llene el espacio sin deformarse
-          <img 
-            src={project.cover_url} 
-            alt={project.title} 
-            className="h-full w-full object-cover transition-transform duration-500"
-          />
-        ) : (
-          // Fallback si no hay imagen
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-secondary/50 gap-2">
-             <ImageOff className="h-8 w-8 opacity-50" />
-             <span className="font-mono text-xs opacity-70">Sin imagen</span>
+        <Link href={`/projects/${project.slug}`} className="block w-full h-full relative">
+          {project.cover_url ? (
+            // Usamos img estándar para evitar configurar dominios en next.config.js por ahora
+            // object-cover asegura que la imagen llene el espacio sin deformarse
+            <img 
+              src={project.cover_url} 
+              alt={project.title} 
+              className="h-full w-full object-cover transition-transform duration-500"
+            />
+          ) : (
+            // Fallback si no hay imagen
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-secondary/50 gap-2">
+               <ImageOff className="h-8 w-8 opacity-50" />
+               <span className="font-mono text-xs opacity-70">Sin imagen</span>
+            </div>
+          )}
+          
+          {/* Overlay al hacer hover (Efecto UX Premium) - Visible en mobile, hover en desktop */}
+          <div className="absolute inset-0 bg-black/60 transition-opacity duration-300 opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center gap-4 backdrop-blur-[2px]">
+            <span className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors h-9 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+              Ver Detalles
+            </span>
           </div>
-        )}
+        </Link>
 
         {/* Like Button (Floating) */}
         <div className="absolute top-3 right-3 z-10">
           <div className="scale-90 shadow-sm backdrop-blur-sm bg-background/80 rounded-full">
             <LikeButton projectId={project.id} initialLikes={initialLikes} initialHasLiked={initialHasLiked} />
           </div>
-        </div>
-        
-        {/* Overlay al hacer hover (Efecto UX Premium) */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center gap-4 backdrop-blur-[2px]">
-          <Link href={`/projects/${project.slug}`}>
-            <Button variant="secondary" size="sm" className="font-medium">
-              Ver Detalles
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -64,6 +63,9 @@ export default function ProjectCard({ project, initialLikes = 0, initialHasLiked
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
             {project.summary}
+          </p>
+          <p className="text-xs text-primary font-medium md:hidden animate-pulse">
+            Toca la imagen para ver detalles
           </p>
         </div>
 

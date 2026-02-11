@@ -3,30 +3,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Code2, ChevronDown } from "lucide-react";
+import { Menu, X, Code2, Home, User, Briefcase, MessageSquareHeart, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Button from "@/components/Button";
 
-const navLinks = [
-  { name: "Inicio", href: "/" },
-  { name: "Proyectos", href: "/projects" },
-  { name: "Testimonios", href: "/testimonials" },
-  { 
-    name: "Sobre mí", 
-    href: "/about",
-    children: [
-      { name: "Perfil General", href: "/about" },
-      { name: "Educación", href: "/about#education" },
-      { name: "Stack Tecnológico", href: "/about#tech-stack" },
-    ]
-  },
+// Estructura de navegación plana con íconos para mejor UX
+const navItems = [
+  { name: "Inicio", href: "/", icon: Home },
+  { name: "Proyectos", href: "/projects", icon: Briefcase },
+  { name: "Testimonios", href: "/testimonials", icon: MessageSquareHeart },
+  { name: "Sobre mí", href: "/about", icon: User },
+  { name: "Contacto", href: "/contact", icon: Mail },
 ];
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const pathname = usePathname();
 
   // Detectar scroll para cambiar estilo del navbar
@@ -55,7 +48,7 @@ export default function Navbar() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-foreground">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-foreground" onClick={() => setIsOpen(false)}>
           <div className="bg-primary/10 p-1.5 rounded-lg">
             <Code2 className="h-6 w-6 text-primary" />
           </div>
@@ -63,22 +56,28 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
-                pathname === link.href ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              {link.name}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-center gap-6">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
+              </Link>
+            );
+          })}
           <Link href="/contact">
             <Button variant="primary" size="sm">
-              Contacto
+              Contratame
             </Button>
           </Link>
         </nav>
@@ -102,74 +101,35 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden bg-background border-b border-border overflow-hidden"
           >
-            <nav className="flex flex-col gap-1 p-4 container mx-auto">
-              {navLinks.map((link) => (
-                <div key={link.name}>
-                  {link.children ? (
-                    // Lógica de Acordeón para items con hijos
-                    <div className="flex flex-col">
-                      <button
-                        onClick={() => setExpandedItem(expandedItem === link.name ? null : link.name)}
-                        className={cn(
-                          "flex w-full items-center justify-between px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                          pathname.startsWith(link.href)
-                            ? "text-primary"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                        )}
-                      >
-                        {link.name}
-                        <ChevronDown 
-                          className={cn(
-                            "h-4 w-4 transition-transform duration-200", 
-                            expandedItem === link.name ? "rotate-180" : ""
-                          )} 
-                        />
-                      </button>
-                      
-                      <AnimatePresence>
-                        {expandedItem === link.name && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="flex flex-col gap-1 pl-4 pb-2">
-                              {link.children.map((child) => (
-                                <Link
-                                  key={child.name}
-                                  href={child.href}
-                                  onClick={() => setIsOpen(false)}
-                                  className="block px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors border-l border-border ml-2"
-                                >
-                                  {child.name}
-                                </Link>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    // Link estándar sin hijos
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "block px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                        pathname === link.href
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                      )}
-                    >
-                      {link.name}
-                    </Link>
-                  )}
-                </div>
-              ))}
+            <nav className="flex flex-col p-4 container mx-auto space-y-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+              
               <div className="pt-2 mt-2 border-t border-border">
-                <Link href="/contact" className="block w-full">
-                  <Button className="w-full">Contacto</Button>
+                <Link href="/contact" className="block w-full" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full gap-2">
+                    <Mail className="h-4 w-4" />
+                    Contratame
+                  </Button>
                 </Link>
               </div>
             </nav>

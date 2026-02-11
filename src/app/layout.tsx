@@ -5,6 +5,8 @@ import MainLayout from "@/components/MainLayout"; // <--- Importamos el wrapper 
 import { Toaster } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Script from "next/script";
+import RealtimeTracker from "@/components/RealtimeTracker";
 
 // Configuración de fuentes
 const inter = Inter({ 
@@ -39,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground flex flex-col min-h-screen">
+        <RealtimeTracker />
         {/* Delegamos la lógica visual al MainLayout */}
         <Toaster richColors position="top-right" />
         <MainLayout
@@ -47,6 +50,11 @@ export default function RootLayout({
         >
           {children}
         </MainLayout>
+        <Script 
+          src="https://cloud.umami.is/script.js" 
+          data-website-id="86e54cb8-ec95-4a27-b256-a8a19324d9c2" 
+          strategy="afterInteractive" 
+        />
       </body>
     </html>
   );

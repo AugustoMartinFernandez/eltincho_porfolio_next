@@ -1,161 +1,30 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, Download, Github, Linkedin } from "lucide-react";
-import Button from "@/components/Button";
-import Link from "next/link";
-import { WorkStatus } from "@/types/about";
+import dynamic from 'next/dynamic';
+import HeroText from '@/domains/home/HeroText';
+import { AboutMe } from "@/types/about";
 
-export default function Hero({ workStatus }: { workStatus?: WorkStatus }) {
+// Importación dinámica para optimizar el LCP
+const HeroVisual = dynamic(() => import('@/domains/home/HeroVisual'), { 
+  ssr: false, 
+  loading: () => <div className="h-[300px] md:h-[500px] w-full" /> 
+});
+
+export default function Hero({ profile }: { profile: AboutMe | null }) {
   return (
     <section className="relative min-h-[calc(100dvh-5rem)] flex items-center justify-center overflow-hidden pt-10 pb-16 md:py-24 lg:py-32">
-      {/* Contenedor principal con Z-index corregido */}
       <div className="container px-4 md:px-6 relative z-10 flex flex-col md:flex-row items-center gap-12">
         
-        {/* --- Columna de Texto --- */}
-        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="space-y-4"
-          >
-            {workStatus === 'open_to_work' && (
-              <div className="inline-block rounded-lg bg-emerald-500/10 px-3 py-1 text-sm text-emerald-600 border border-emerald-500/20 font-medium">
-                Disponible para trabajar
-              </div>
-            )}
-            {workStatus === 'hiring' && (
-              <div className="inline-block rounded-lg bg-purple-500/10 px-3 py-1 text-sm text-purple-600 border border-purple-500/20 font-medium">
-                Contratando Talento
-              </div>
-            )}
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter xl:text-7xl/none bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
-              Desarrollo Web & <br />
-              <span className="text-primary">Soluciones Full Stack.</span>
-            </h1>
-            <p className="max-w-150 text-muted-foreground md:text-xl leading-relaxed">
-              Enfocado en construir aplicaciones modernas, rápidas y escalables. Transformo lógica compleja en experiencias de usuario fluidas.
-            </p>
-          </motion.div>
-
-{/* Botones de Acción */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row gap-4 w-auto"
-          >
-            <Link href="/projects" className="w-auto">
-              <Button size="lg" className="w-auto gap-2 px-8">
-                Ver Proyectos <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/contact" className="w-auto">
-              <Button variant="outline" size="lg" className="w-auto px-8">
-                Contactame
-              </Button>
-            </Link>
-          </motion.div>
-
-          {/* Redes Sociales */}
-          <motion.div
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             transition={{ duration: 0.5, delay: 0.4 }}
-             className="flex items-center gap-4 text-muted-foreground"
-          >
-            <a href="https://github.com/AugustoMartinFernandez" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors p-1">
-              <Github className="h-6 w-6" />
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors p-1">
-              <Linkedin className="h-6 w-6" />
-            </a>
-            <span className="h-4 w-px bg-border mx-2"></span>
-            <a href="/cv.pdf" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-2 p-1">
-              Descargar CV <Download className="h-4 w-4" />
-            </a>
-          </motion.div>
+        {/* El texto es crítico para el SEO y LCP, carga primero */}
+        <div className="flex-1 z-10">
+          <HeroText profile={profile} />
         </div>
 
-        {/* --- Columna Visual / Abstract Data Matrix (Optimizado) --- */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="flex-1 w-full max-w-70 h-70 -my-5 md:my-0 md:h-auto md:max-w-125 md:aspect-square relative flex items-center justify-center"
-        >
-          {/* 1. Fondo Atmosférico (Estático para performance) */}
-          <div className="absolute inset-0 bg-linear-to-tr from-primary/20 via-transparent to-secondary/20 blur-[60px] rounded-full opacity-60" />
-
-          {/* 2. Estructura Central (Cubo) */}
-          <div className="relative w-64 h-64" style={{ perspective: "1000px" }}>
-            <motion.div
-              className="w-full h-full relative preserve-3d will-change-transform"
-              style={{ transformStyle: "preserve-3d" }}
-              animate={{ rotateX: [0, 360], rotateY: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              {/* Caras del cubo: Eliminado backdrop-blur para evitar lag */}
-              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "translateZ(40px)" }} />
-              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "rotateY(90deg) translateZ(40px)" }} />
-              <div className="absolute inset-0 border border-primary/40 rounded-3xl bg-primary/5" style={{ transform: "rotateX(90deg) translateZ(40px)" }} />
-              
-              {/* Núcleo Pulsante */}
-              <motion.div 
-                className="absolute inset-20 bg-primary/30 rounded-full blur-xl shadow-[0_0_30px_rgba(var(--primary),0.4)]"
-                animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.6, 0.9, 0.6] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </motion.div>
-          </div>
-
-          {/* 3. Elementos Flotantes (Optimizados: Will Change) */}
-          <motion.div
-            className="absolute top-[15%] left-[15%] w-12 h-12 border border-secondary/30 bg-card/50 rounded-xl flex items-center justify-center shadow-lg z-20 will-change-transform"
-            animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="w-2.5 h-2.5 bg-secondary rounded-full opacity-80" />
-          </motion.div>
-
-          <motion.div
-            className="absolute bottom-[20%] right-[10%] w-16 h-16 border border-primary/30 bg-card/50 rounded-full flex items-center justify-center shadow-xl z-20 will-change-transform"
-            animate={{ y: [10, -10, 10] }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          >
-            <div className="w-3 h-3 bg-primary rounded-sm rotate-45 opacity-80" />
-          </motion.div>
-
-          <motion.div
-            className="absolute top-[10%] right-[25%] w-3 h-3 bg-primary rounded-full shadow-[0_0_15px_currentColor] will-change-transform"
-            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          />
-
-          {/* 4. Líneas de Conexión (SVG liviano) */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-40">
-            <motion.line
-              x1="30%" y1="30%" x2="50%" y2="50%"
-              stroke="currentColor" strokeWidth="1" className="text-secondary" strokeDasharray="4 4"
-              animate={{ strokeDashoffset: [0, -8] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.line
-              x1="70%" y1="70%" x2="50%" y2="50%"
-              stroke="currentColor" strokeWidth="1" className="text-primary"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: [0, 1, 0], opacity: [0, 1, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </svg>
-        </motion.div>
-
+        {/* La visual es decorativa y pesada, carga diferida */}
+        <div className="flex-1 w-full relative h-[400px] md:h-[500px] flex items-center justify-center">
+          <HeroVisual />
+        </div>
       </div>
-
-      {/* Background Decorativo (Estático para evitar repintes) */}
-      <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/3 w-75 md:w-125 h-75 md:h-125 bg-primary/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/3 w-75 md:w-125 h-75 md:h-125 bg-secondary/5 rounded-full blur-3xl" />
     </section>
   );
 }

@@ -18,20 +18,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Extendemos el tipo localmente para incluir 'featured' y evitar errores de TS
+// Extendemos el tipo localmente para incluir 'featured' y evitar errores de TS si el tipo base no está actualizado
 type TestimonialWithFeatured = Testimonial & { featured?: boolean };
 
 export default function TestimonialsManager({ initialTestimonials }: { initialTestimonials: Testimonial[] }) {
   const [testimonials, setTestimonials] = useState<TestimonialWithFeatured[]>(initialTestimonials);
   const [filter, setFilter] = useState<'pending' | 'approved'>('pending');
   const [isPending, startTransition] = useTransition();
-
-  // Helper para detectar nuevos (últimas 24hs)
-  const isRecent = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    return (now.getTime() - date.getTime()) < 24 * 60 * 60 * 1000;
-  };
 
   // Filtrar en cliente para rapidez
   const displayedItems = testimonials.filter(t => 
@@ -147,12 +140,6 @@ export default function TestimonialsManager({ initialTestimonials }: { initialTe
                     <Clock className="h-3 w-3" />
                     {new Date(t.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     
-                    {isRecent(t.created_at) && (
-                      <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse">
-                        NUEVO
-                      </span>
-                    )}
-
                     <span className="mx-1">•</span>
                     <span className="flex text-yellow-500">
                       {"★".repeat(t.rating)}

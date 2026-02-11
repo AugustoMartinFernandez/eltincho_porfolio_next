@@ -24,15 +24,18 @@ export default async function TestimonialsPage() {
   );
 
   // Fetch de Proyectos (Solo ID y Título para el select del formulario)
-  const { data: projects } = await supabase
+  // Y Fetch de Testimonios para el Carrusel (Todos los aprobados, ordenados por fecha)
+  const [projectsRes] = await Promise.all([
+    supabase
     .from("projects")
     .select("id, title")
-    .eq("visible", true);
+    .eq("visible", true)
+  ]);
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-10">
       {/* Pasamos los proyectos al cliente para el Wizard */}
-      <TestimonialsPageClient projects={projects || []}>
+      <TestimonialsPageClient projects={projectsRes.data || []}>
         {/* Renderizamos el Muro como hijo (Server Component) */}
         <TestimonialsWall />
       </TestimonialsPageClient>

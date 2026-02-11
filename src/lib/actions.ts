@@ -264,3 +264,30 @@ export async function toggleFeaturedTestimonial(id: string, currentState: boolea
   revalidatePath("/admin/testimonials");
   revalidatePath("/");
 }
+
+// --- ANALYTICS (Admin - Polling) ---
+export async function getRealtimeUmamiStats() {
+  const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+  const apiKey = process.env.UMAMI_API_KEY;
+
+  if (!websiteId || !apiKey) return { pageviews: { value: 0 }, visitors: { value: 0 } };
+
+  const endAt = Date.now();
+  // Usamos 1 año atrás para consistencia con la carga inicial
+  const startAt = endAt - (365 * 24 * 60 * 60 * 1000); 
+
+  try {
+    const res = await fetch(
+      `https://api.umami.is/v1/websites/${websiteId}/stats?startAt=${startAt}&endAt=${endAt}`,
+      {
+        headers: { "x-umami-api-key": apiKey },
+        cache: 'no-store' // Crítico: Evita que Next.js cachee la respuesta
+      }
+    );
+
+    if (!res.ok) throw new Error("Error fetching Umami");
+    return res.json();
+  } catch (error) {
+    return { pageviews: { value: 0 }, visitors: { value: 0 } };
+  }
+}

@@ -53,7 +53,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("portfolio_session")?.value;
   
-  // Buscamos el proyecto usando el slug "desempaquetado"
+  // Consulta al proyecto con filtros de visibilidad
   const { data: project, error } = await supabase
     .from("projects")
     .select("*")
@@ -61,9 +61,14 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     .eq("visible", true)
     .single();
 
-  // Si hay error o no existe, 404
+  // Mejora en la depuración: Si hay error o no existe, logueamos el detalle técnico
   if (error || !project) {
-    console.error("Error fetching project:", error); // Log para depurar
+    console.error("Error fetching project:", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      attemptedSlug: slug
+    }); 
     notFound();
   }
 
