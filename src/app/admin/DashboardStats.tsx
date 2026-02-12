@@ -20,7 +20,7 @@ export default function DashboardStats({
     visitors: totalVisitors || 0 
   });
 
-  // Polling de Umami (Cada 30s) con validación defensiva
+  // Polling de Umami (Cada 60s) con validación defensiva
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -35,7 +35,7 @@ export default function DashboardStats({
       } catch (err) {
         console.error("Error polling Umami stats:", err);
       }
-    }, 30000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);

@@ -198,7 +198,7 @@ export default async function AboutPage() {
                             {exp.role_title}
                           </h3>
                           <span className="text-xs font-mono font-medium text-muted-foreground bg-secondary px-2 py-1 rounded w-fit uppercase">
-                            {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : "Actualidad"}
+                            {formatDate(exp.start_date)} — {exp.current ? "Actualidad" : (exp.end_date ? formatDate(exp.end_date) : "Actualidad")}
                           </span>
                         </div>
                         

@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request,
   })
 
   const supabase = createServerClient(
@@ -13,61 +11,42 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request,
           })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const { pathname, searchParams } = request.nextUrl
 
-  // Proteger rutas que empiecen con /admin
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  // 1. Protección de Rutas: Si NO hay sesión y quiere entrar a zonas privadas
+  const isProtectedRoute = pathname.startsWith('/admin') || pathname === '/update-password'
+  if (!user && isProtectedRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Si está logueado y trata de ir al login, mandarlo al admin
-  if (request.nextUrl.pathname === '/login') {
-    if (user) {
-      return NextResponse.redirect(new URL('/admin', request.url))
+  // 2. Lógica de Redirección Inteligente: Si SÍ hay sesión y está en el login
+  if (user && pathname === '/login') {
+    const next = searchParams.get('next')
+    
+    // EXCEPCIÓN CRÍTICA: Si el flujo viene de una recuperación de contraseña
+    if (next === '/update-password') {
+      return NextResponse.redirect(new URL('/update-password', request.url))
     }
+
+    // Por defecto, si ya está logueado, mandarlo al dashboard
+    return NextResponse.redirect(new URL('/admin', request.url))
   }
 
   return response

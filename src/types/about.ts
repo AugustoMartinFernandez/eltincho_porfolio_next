@@ -31,6 +31,7 @@ export interface Experience {
   end_date?: string | null;
   description_md: string;
   visible: boolean;
+  current: boolean;
   // tech_stack?: string[]; 
 }
 export interface Education {
@@ -40,6 +41,7 @@ export interface Education {
   start_date: string;
   end_date?: string | null;
   visible: boolean;
+  current: boolean;
   certificate_url?: string;
 }
 export type TechCategory = 'frontend' | 'backend' | 'database' | 'tool' | 'infrastructure';

@@ -1,11 +1,10 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { FolderKanban, MessageSquare } from "lucide-react";
 import DashboardStats from "./DashboardStats";
 import AnalyticsGrid from "@/app/admin/AnalyticsGrid";
-import TrafficChart from "./TrafficChart";
-import WorldMap from "@/app/admin/WorldMap";
+import DangerZone from "@/app/admin/DangerZone";
 
 // --- CLIENTE SUPABASE SERVER-SIDE ---
 async function createClient() {
@@ -16,8 +15,17 @@ async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Manejo de error silencioso para Server Components
+          }
         },
       },
     }
@@ -49,18 +57,18 @@ async function getUmamiData() {
   const headers = { 'x-umami-api-key': apiKey };
   const base = `https://api.umami.is/v1/websites/${websiteId}`;
   
-  const listParams = `startAt=${new Date("2024-01-01").getTime()}&endAt=${endAt}&limit=5`;
+  const listParams = `startAt=${startAt}&endAt=${endAt}&limit=5`;
   const chartParams = `startAt=${startAt}&endAt=${endAt}&unit=hour`;
 
   try {
     const [statsRes, pagesRes, countryRes, cityRes, deviceRes, refRes, browserRes] = await Promise.all([
-      fetch(`${base}/stats?${chartParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=url&${listParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=country&${listParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=city&${listParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=os&${listParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=referrer&${listParams}`, { headers, next: { revalidate: 60 } }),
-      fetch(`${base}/metrics?type=browser&${listParams}`, { headers, next: { revalidate: 60 } }),
+      fetch(`${base}/stats?${chartParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=url&${listParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=country&${listParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=city&${listParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=os&${listParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=referrer&${listParams}`, { headers, next: { revalidate: 30 } }),
+      fetch(`${base}/metrics?type=browser&${listParams}`, { headers, next: { revalidate: 30 } }),
     ]);
 
     // 🛡️ BLOQUE DEFENSIVO: Validamos cada respuesta JSON
@@ -98,7 +106,6 @@ export default async function AdminDashboard() {
   const supabase = await createClient();
   const data = await getUmamiData();
 
-  // Obtenemos datos de Supabase para las tarjetas inferiores
   const { count: projectCount } = await supabase.from("projects").select("*", { count: "exact", head: true });
   const { count: messageCount } = await supabase.from("contact_messages").select("*", { count: "exact", head: true });
 
@@ -111,24 +118,12 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* Métricas Principales (Realtime + Umami) */}
+      {/* Métricas Principales */}
       <Suspense fallback={<div className="h-32 w-full bg-muted/20 animate-pulse rounded-xl" />}>
         <DashboardStats totalViews={data.totalViews} totalVisitors={data.totalVisitors} />
       </Suspense>
 
-      {/* Gráfico de Tráfico */}
-      <Suspense fallback={<div className="h-[300px] w-full bg-muted/20 animate-pulse rounded-xl" />}>
-        <TrafficChart data={data.chartData} />
-      </Suspense>
-
-      {/* Mapa Mundial de Audiencia */}
-      <div className="mt-8">
-        <Suspense fallback={<div className="h-[400px] w-full bg-muted/20 animate-pulse rounded-xl" />}>
-          <WorldMap data={data.topCountries} />
-        </Suspense>
-      </div>
-
-      {/* Tarjetas de Resumen de Contenido */}
+      {/* Tarjetas de Resumen */}
       <div className="grid gap-4 md:grid-cols-2 mt-8">
         <StatsCard 
           title="Proyectos Totales" 
@@ -144,7 +139,7 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      {/* Métricas Detalladas (BI) */}
+      {/* Métricas Detalladas */}
       <h3 className="text-lg font-medium mt-8">Detalle de Tráfico</h3>
       <Suspense fallback={<div className="h-64 w-full bg-muted/20 animate-pulse rounded-xl" />}>
         <AnalyticsGrid 
@@ -156,6 +151,9 @@ export default async function AdminDashboard() {
           topBrowsers={data.topBrowsers}
         />
       </Suspense>
+
+      {/* ZONA DE PELIGRO */}
+      <DangerZone />
     </div>
   );
 }

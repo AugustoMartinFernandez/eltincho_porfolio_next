@@ -16,15 +16,14 @@ import {
   Search,
   User,
   Home,
+  CheckCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/components/Button";
 import { cn } from "@/lib/utils";
-
-// --- CONFIGURACIÓN DE SEGURIDAD ---
-const MY_EMAIL = "mff061022@gmail.com";
+import { validateAdminEmail, logSecurityBreach, resetPasswordForEmail } from "@/lib/actions";
 
 // Componente de Fondo Animado
 const BackgroundElements = () => {
@@ -75,6 +74,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isIntruder, setIsIntruder] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [countdown, setCountdown] = useState(10); // Actualizado a 10 segundos
@@ -151,7 +152,33 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    if (email.toLowerCase() !== MY_EMAIL.toLowerCase()) {
+    // Lógica de Recuperación de Contraseña
+    if (isResetMode) {
+      const res = await resetPasswordForEmail(email);
+      setLoading(false);
+      
+      if (res.success) {
+        setResetSuccess(true);
+      } else {
+        if (res.error === "invalid_email") {
+          // 🛡️ Anti-Hack: Solo activamos modo intruso si el email es incorrecto
+          logSecurityBreach(email);
+          setIsIntruder(true);
+        } else {
+          // Error técnico (auth_error), no activamos el modo hacker para no bloquearnos
+          setError("Hubo un error técnico con el servicio de correos. Intenta más tarde.");
+        }
+      }
+      return;
+    }
+
+    // Validación en servidor para ocultar el email real
+    const isValid = await validateAdminEmail(email);
+
+    if (!isValid) {
+      // 🛡️ Registro de auditoría (fire and forget)
+      logSecurityBreach(email);
+
       setTimeout(() => {
         setLoading(false);
         setIsIntruder(true);
@@ -329,10 +356,10 @@ export default function LoginPage() {
             </motion.div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Admin Dev
+                {isResetMode ? "Recuperar Acceso" : "Admin Dev"}
               </h1>
               <p className="text-sm text-muted-foreground mt-2">
-                Entrada restringida. Autorización de Nivel 4 requerida.
+                {isResetMode ? "Se enviará un enlace de un solo uso." : "Entrada restringida. Autorización de Nivel 4 requerida."}
               </p>
             </div>
           </div>
@@ -356,22 +383,33 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label
-                className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1"
-                htmlFor="password"
-              >
-                Clave de Acceso
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-            </div>
+            {!isResetMode && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label
+                    className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+                    htmlFor="password"
+                  >
+                    Clave de Acceso
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsResetMode(true)}
+                    className="text-[10px] font-bold text-primary hover:underline uppercase tracking-tighter"
+                  >
+                    ¿Olvidaste tu clave?
+                  </button>
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                />
+              </div>
+            )}
 
             {error && (
               <motion.div
@@ -383,13 +421,36 @@ export default function LoginPage() {
               </motion.div>
             )}
 
+            {resetSuccess && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-xl bg-emerald-500/10 p-4 text-xs text-emerald-500 flex items-center gap-3 border border-emerald-500/20"
+              >
+                <CheckCircle className="h-5 w-5 shrink-0" /> Revisa tu correo para continuar.
+              </motion.div>
+            )}
+
             <Button
               type="submit"
               className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20"
               isLoading={loading}
             >
-              Ejecutar Autenticación
+              {isResetMode ? "Enviar Link de Recuperación" : "Ejecutar Autenticación"}
             </Button>
+
+            {isResetMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetMode(false);
+                  setResetSuccess(false);
+                }}
+                className="w-full text-xs font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
+              >
+                Volver al Login
+              </button>
+            )}
           </form>
 
           <div className="mt-8 pt-6 border-t border-border/50 text-center">

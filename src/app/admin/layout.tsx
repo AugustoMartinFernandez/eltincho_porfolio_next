@@ -11,20 +11,23 @@ import {
   LogOut, 
   Code2,
   User,
-  MessageSquareHeart
+  MessageSquareHeart,
+  Wifi,
+  WifiOff,
+  ShieldAlert
 } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
 import Button from "@/components/Button";
 import { motion, AnimatePresence } from "framer-motion";
 
-// AGREGAMOS EL LINK "PERFIL" AQUÍ
 const adminLinks = [
 { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Perfil (Sobre mí)", href: "/admin/about", icon: User },
   { name: "Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Testimonios", href: "/admin/testimonials", icon: MessageSquareHeart },
   { name: "Mensajes", href: "/admin/messages", icon: MessageSquare },
+  { name: "Auditorías", href: "/admin/audits", icon: ShieldAlert },
 ];
 
 const menuTransition = { duration: 0.3, ease: "easeInOut" } as const;
@@ -38,6 +41,7 @@ export default function AdminLayout({
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const [supabaseStatus, setSupabaseStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,6 +55,23 @@ export default function AdminLayout({
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Verificación de conexión a Supabase (Ping ligero)
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const { error } = await supabase.from("about_me").select("id", { count: 'exact', head: true }).limit(1);
+        if (error) throw error;
+        setSupabaseStatus('online');
+      } catch (err) {
+        setSupabaseStatus('offline');
+      }
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 60000); // Verificar cada 1 minuto
+    return () => clearInterval(interval);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -90,7 +111,26 @@ export default function AdminLayout({
           ))}
         </nav>
 
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border p-4 space-y-4">
+          {/* Indicador de Estado Supabase */}
+          <div className="flex items-center gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 rounded-lg border border-border/50">
+            <div className="relative flex h-2 w-2">
+              <span className={cn(
+                "absolute inline-flex h-full w-full rounded-full opacity-75",
+                supabaseStatus === 'online' ? "animate-ping bg-emerald-400" : 
+                supabaseStatus === 'offline' ? "bg-red-400" : "bg-amber-400"
+              )}></span>
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                supabaseStatus === 'online' ? "bg-emerald-500" : 
+                supabaseStatus === 'offline' ? "bg-red-500" : "bg-amber-500"
+              )}></span>
+            </div>
+            <span>
+              Supabase: {supabaseStatus === 'online' ? 'En línea' : supabaseStatus === 'offline' ? 'Desconectado' : 'Verificando'}
+            </span>
+          </div>
+
           <Button 
             variant="ghost" 
             className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -162,6 +202,27 @@ export default function AdminLayout({
                   </motion.div>
                 ))}
                 
+                {/* Indicador Mobile */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 rounded-xl mt-2 border border-border/50"
+                >
+                  <div className="relative flex h-2 w-2">
+                    <span className={cn(
+                      "absolute inline-flex h-full w-full rounded-full opacity-75",
+                      supabaseStatus === 'online' ? "animate-ping bg-emerald-400" : 
+                      supabaseStatus === 'offline' ? "bg-red-400" : "bg-amber-400"
+                    )}></span>
+                    <span className={cn(
+                      "relative inline-flex rounded-full h-2 w-2",
+                      supabaseStatus === 'online' ? "bg-emerald-500" : 
+                      supabaseStatus === 'offline' ? "bg-red-500" : "bg-amber-500"
+                    )}></span>
+                  </div>
+                  <span>Supabase: {supabaseStatus === 'online' ? 'En línea' : supabaseStatus === 'offline' ? 'Desconectado' : 'Verificando'}</span>
+                </motion.div>
+
                 <div className="my-4 border-t border-border/50" />
                 
                 <motion.button
