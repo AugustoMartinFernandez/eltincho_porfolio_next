@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState } from "react"; // <--- CAMBIO 1: Importamos desde 'react' con el nombre nuevo
+import { useActionState } from "react";
 import { sendContactMessage } from "@/lib/actions";
 import Button from "@/components/Button";
 import { Mail, MapPin, Send, CheckCircle2 } from "lucide-react";
-import { useFormStatus } from "react-dom"; // useFormStatus se mantiene en react-dom por ahora
-
+import { useFormStatus } from "react-dom"; 
 const initialState = {
   message: "",
   errors: {},
@@ -41,7 +40,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="font-semibold text-lg">Email</h3>
                 <a href="mailto:hola@tinchodev.com" className="text-muted-foreground hover:text-foreground transition-colors">
-                  hola@tinchodev.com
+                  tinchodeev@gmail.com
                 </a>
               </div>
             </div>
@@ -53,7 +52,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="font-semibold text-lg">Ubicación</h3>
                 <p className="text-muted-foreground">
-                  Buenos Aires, Argentina<br/>
+                  Trancas, Tucumán<br/>
                   (Disponible Remoto)
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from 'crypto';
+import { z } from "zod";
 
 // --- HELPER DE SEGURIDAD ---
 // Esta función crea un cliente de Supabase que "sabe" quién está logueado
@@ -248,49 +249,63 @@ export type TestimonialState = {
   errors?: {
     name?: string[];
     email?: string[]; // Nuevo campo de error
+    relationship?: string[];
     content?: string[];
   };
 };
 
+// --- DEFINICIÓN DEL ESQUEMA ZOD (CORREGIDO) ---
+const TestimonialSchema = z.object({
+  name: z.string().min(2, { message: "El nombre es obligatorio." }),
+  email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
+  
+  // CORRECCIÓN: Usamos 'message' en lugar de 'errorMap' para compatibilidad con la firma de TS
+  relationship: z.enum(["client", "colleague", "visitor"] as const, {
+    message: "Debes seleccionar quién eres.",
+  }),
+  
+  role_or_company: z.string().nullable().optional().transform(val => val || null),
+  project_id: z.string().nullable().optional().transform(val => val || null),
+  content: z.string().min(10, { message: "El testimonio es muy corto." }),
+  rating: z.coerce.number().min(1).max(5).default(5),
+});
+
+// --- SERVER ACTION (CON VALIDACIÓN) ---
 export async function createTestimonial(prevState: TestimonialState, formData: FormData): Promise<TestimonialState> {
-  // 🛡️ PASO 1: Anti-Bot (Honeypot)
+  // 1. Anti-Bot (Honeypot)
   const website_url = formData.get("website_url") as string;
   if (website_url) {
     return { message: "Testimonio enviado con éxito", success: true };
   }
 
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string; // Capturamos email
-  const relationship = formData.get("relationship") as string;
-  const role_or_company = formData.get("role_or_company") as string;
-  const project_id = formData.get("project_id") as string;
-  const content = formData.get("content") as string;
-  const rating = Number(formData.get("rating"));
+  // 2. Validación con Zod
+  const validatedFields = TestimonialSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    relationship: formData.get("relationship"),
+    role_or_company: formData.get("role_or_company"),
+    project_id: formData.get("project_id"),
+    content: formData.get("content"),
+    rating: formData.get("rating"),
+  });
+
+  // 3. Manejo de Errores de Validación
+  if (!validatedFields.success) {
+    return {
+      message: "Por favor corrige los errores.",
+      errors: validatedFields.error.flatten().fieldErrors,
+      success: false,
+    };
+  }
+
+  // 4. Extracción de datos validados
+  const { name, email, relationship, role_or_company, project_id, content, rating } = validatedFields.data;
+  
+  // 5. Lógica de Archivos (Avatar)
   const avatarFile = formData.get("avatar") as File | null;
-
-  // 1. Validaciones
-  const errors: TestimonialState['errors'] = {};
-  
-  if (!name || name.length < 2) errors.name = ["El nombre es obligatorio."];
-  
-  // Validación estricta de Email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || !emailRegex.test(email)) {
-    errors.email = ["Por favor, ingresa un correo válido."];
-  }
-
-  if (!content || content.length < 10) errors.content = ["El testimonio es muy corto."];
-  
-  if (Object.keys(errors).length > 0) {
-    return { message: "Por favor corrige los errores.", errors, success: false };
-  }
-
-  if (!relationship) return { message: "Debes seleccionar quién eres.", success: false };
-
   let avatar_url = null;
   let uploadedFilePath: string | null = null;
 
-  // 2. Subir Avatar
   if (avatarFile && avatarFile.size > 0) {
     try {
       const fileExt = avatarFile.name.split('.').pop();
@@ -311,16 +326,16 @@ export async function createTestimonial(prevState: TestimonialState, formData: F
     }
   }
 
-  // 🛡️ PASO 2: Gestión de Archivos Huérfanos con try/catch
+  // 6. Inserción en Base de Datos
   try {
     const { error } = await supabase.from("testimonials").insert({
       name,
       email,
-      relationship,
-      role_or_company: role_or_company || null,
-      project_id: project_id || null,
+      relationship, // Ahora es seguro y tipado correctamente como "client" | "colleague" | "visitor"
+      role_or_company,
+      project_id,
       content,
-      rating: rating || 5,
+      rating,
       avatar_url,
       is_approved: false
     });
@@ -328,24 +343,15 @@ export async function createTestimonial(prevState: TestimonialState, formData: F
     if (error) throw error;
 
     revalidatePath("/admin/testimonials"); 
-    
-    // Log de seguridad (Testimonio enviado)
     recordSecurityEvent("TESTIMONIAL_SUBMITTED", { name, email });
-
     return { message: "¡Gracias! Tu testimonio está pendiente de aprobación.", success: true };
   } catch (error) {
-    console.error("Error creando testimonio (Cleanup Triggered):", error);
-    
-    // Si falló la BD pero subimos una imagen, la borramos para no dejar basura
-    if (uploadedFilePath) {
-      await supabase.storage.from('portfolio').remove([uploadedFilePath]);
-    }
-
+    console.error("Error creando testimonio:", error);
+    // Cleanup de imagen si falla la DB
+    if (uploadedFilePath) await supabase.storage.from('portfolio').remove([uploadedFilePath]);
     return { message: "Error al guardar. Intenta nuevamente.", success: false };
   }
 }
-
-// --- TESTIMONIOS (Gestión Admin - REQUIERE AUTH) ---
 
 // Acción de Admin: Aprobar
 export async function approveTestimonial(id: string) {

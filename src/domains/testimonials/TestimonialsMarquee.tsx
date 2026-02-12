@@ -7,51 +7,45 @@ import { cn } from "@/lib/utils";
 
 interface TestimonialsMarqueeProps {
   items: Testimonial[];
-  speed?: "fast" | "normal" | "slow";
   direction?: "left" | "right";
 }
 
 export default function TestimonialsMarquee({ 
   items, 
-  speed = "slow", 
   direction = "left" 
 }: TestimonialsMarqueeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [start, setStart] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // Activamos la animación solo después de montar para evitar hidratación incorrecta
   useEffect(() => {
     if (containerRef.current) {
       setStart(true);
     }
   }, []);
 
-  // Manejador de Scroll para actualizar los puntos en Mobile
+  // Lógica de Puntos (Dots) para Mobile
   const handleScroll = () => {
     if (containerRef.current) {
       const scrollLeft = containerRef.current.scrollLeft;
-      // Accedemos al wrapper (children[0]) y luego a la primera card (children[0])
       const cardElement = containerRef.current.children[0]?.children[0] as HTMLElement;
       const cardWidth = cardElement?.clientWidth || 0;
       
       if (cardWidth > 0) {
-        // Sumamos la mitad del ancho para que el cambio de punto sea más natural
-        const index = Math.round(scrollLeft / (cardWidth + 24)); // 24 es el gap (gap-6)
+        const index = Math.round(scrollLeft / (cardWidth + 24)); // 24 = gap-6
         setActiveIndex(index);
       }
     }
   };
 
-  const speedClass = {
-    fast: "20s",
-    normal: "40s",
-    slow: "80s",
-  };
-
-  // ESTRATEGIA HÍBRIDA:
-  // Desktop: Marquee si hay suficientes items.
-  // Mobile: Siempre Carrusel Manual (Snap).
+  // --- LÓGICA SMART MARQUEE ---
+  // Si tenemos pocos items, mejor mostrarlos quietos y centrados.
   const isDesktopMarquee = items.length >= 5;
+
+  // Velocidad Constante: Calculamos duración basada en cantidad de items para evitar mareos.
+  // Aprox 6 segundos por item para una lectura cómoda.
+  const duration = `${items.length * 6}s`;
 
   return (
     <div className="flex flex-col gap-6 w-full relative z-20">
@@ -60,10 +54,9 @@ export default function TestimonialsMarquee({
         onScroll={handleScroll}
         className={cn(
           "scroller max-w-full",
-          // --- MOBILE: MANUAL SNAP ---
+          // MOBILE: Siempre scroll manual con snap
           "overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth",
-          // --- DESKTOP: MARQUEE ---
-          // Si activamos marquee, ocultamos scroll y aplicamos máscara
+          // DESKTOP: Ocultamos scroll si es marquee, sino dejamos natural
           isDesktopMarquee 
             ? "md:overflow-hidden md:snap-none md:[mask-image:linear-gradient(to_right,transparent,white_5%,white_95%,transparent)]" 
             : "md:overflow-hidden md:snap-none"
@@ -72,51 +65,44 @@ export default function TestimonialsMarquee({
         <div
           className={cn(
             "flex w-max min-w-full gap-6 py-4",
-            // --- ANIMACIÓN SOLO DESKTOP ---
+            // Solo animamos si hay suficientes items y ya montó el componente
             (start && isDesktopMarquee) && "md:animate-infinite-scroll",
-            // Pausa al hover solo en desktop
+            // Pausa al hover para permitir lectura tranquila
             isDesktopMarquee && "md:hover:animation-pause",
-            // Si es estático en desktop, centramos
+            // Si son pocos, los centramos en pantalla (Modo Escaparate)
             !isDesktopMarquee && "md:justify-center md:w-full md:flex-wrap"
           )}
           style={{
-            "--speed": speedClass[speed],
+            "--speed": duration, // Variable CSS dinámica
             animationDirection: direction === "right" ? "reverse" : "normal",
           } as React.CSSProperties}
         >
-          {/* LISTA PRINCIPAL (Visible en Mobile y Desktop) */}
+          {/* LISTA ORIGINAL */}
           {items.map((item, idx) => (
             <MarqueeCard key={`${item.id}-${idx}-origin`} t={item} />
           ))}
 
-          {/* LISTA DUPLICADA (Solo visible en Desktop para el Loop Infinito) */}
-          {/* En mobile la ocultamos para no confundir el scroll manual y los puntos */}
-          <div 
-            aria-hidden="true" 
-            className={cn(
-              "flex gap-6",
-              "hidden", // Oculto por defecto (Mobile)
-              isDesktopMarquee && "md:flex" // Visible solo en Desktop Marquee
-            )}
-          >
-            {items.map((item, idx) => (
-              <MarqueeCard key={`${item.id}-${idx}-clone`} t={item} />
-            ))}
-          </div>
+          {/* LISTA CLONADA (Solo para el loop infinito en Desktop) */}
+          {isDesktopMarquee && (
+            <div aria-hidden="true" className="hidden md:flex gap-6">
+              {items.map((item, idx) => (
+                <MarqueeCard key={`${item.id}-${idx}-clone`} t={item} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* --- INDICADORES (DOTS) --- */}
-      {/* Solo visibles en Mobile o cuando no hay marquee en desktop */}
+      {/* INDICADORES MÓVILES (Dots) */}
+      {/* Se ocultan en escritorio si el marquee está activo */}
       <div className={cn(
         "flex justify-center gap-2",
-        isDesktopMarquee && "md:hidden" // Si hay marquee, ocultamos los puntos en desktop
+        isDesktopMarquee && "md:hidden"
       )}>
         {items.map((_, idx) => (
           <button
             key={idx}
             onClick={() => {
-              // Scroll suave al hacer click en el punto
               if (containerRef.current) {
                 const wrapper = containerRef.current.children[0];
                 const card = wrapper?.children[0] as HTMLElement;
@@ -127,10 +113,10 @@ export default function TestimonialsMarquee({
               }
             }}
             className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              idx === activeIndex ? "w-6 bg-primary" : "w-2 bg-primary/20 hover:bg-primary/40"
+              "h-1.5 rounded-full transition-all duration-300",
+              idx === activeIndex ? "w-6 bg-primary" : "w-1.5 bg-primary/20 hover:bg-primary/40"
             )}
-            aria-label={`Ir al testimonio ${idx + 1}`}
+            aria-label={`Ver testimonio ${idx + 1}`}
           />
         ))}
       </div>
@@ -142,95 +128,84 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const isFeatured = t.featured === true;
   
-  // MAPEO DE ROLES (Traducción BD -> Vista)
   const roleLabels: Record<string, string> = {
     client: "Cliente",
     colleague: "Colega",
-    visitor: "Conocido", // Mucho más personal que "Comunidad"
+    visitor: "Conocido",
   };
 
   const label = roleLabels[t.relationship] || "Visitante";
 
   return (
     <div className={cn(
-      "relative shrink-0 rounded-2xl border bg-card p-8 transition-all select-none flex flex-col h-full group",
-      "w-[85vw] max-w-[380px] md:w-[450px] md:max-w-none",
-      // Estilo condicional para destacados
+      "relative shrink-0 rounded-2xl border bg-card p-6 md:p-8 transition-all select-none flex flex-col h-full group snap-center",
+      // RESPONSIVE SIZING: 
+      // Mobile: 85% del ancho para ver 'peek' del siguiente. Desktop: fijo óptimo.
+      "w-[85vw] max-w-[350px] md:w-[400px]", 
       isFeatured 
         ? "border-primary/60 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.2)] bg-gradient-to-b from-card to-primary/[0.02]" 
-        : "border-border/60 shadow-md hover:shadow-lg hover:border-primary/40"
+        : "border-border/60 shadow-sm hover:shadow-md hover:border-primary/30"
     )}>
       
-      {/* Badge Flotante para Destacados */}
+      {/* Badge Destacado */}
       {isFeatured && (
-        <div className="absolute -top-3 -right-3 bg-primary text-primary-foreground text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 z-30 animate-pulse">
-          <Star className="h-3 w-3 fill-current" />
-          DESTACADO
+        <div className="absolute -top-2.5 -right-2.5 bg-primary text-primary-foreground text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow-lg flex items-center gap-1 z-30">
+          <Star className="h-2.5 w-2.5 fill-current" />
+          TOP
         </div>
       )}
       
-      {/* HEADER: Avatar e Información */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          {/* Avatar con anillo sutil */}
-          <div className="h-14 w-14 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold text-lg border-2 border-background ring-1 ring-border/30 group-hover:ring-primary/30 transition-all">
+      {/* Header Compacto */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold text-sm md:text-base border border-border group-hover:border-primary/30 transition-colors">
             {t.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={t.avatar_url} alt={t.name} className="h-full w-full object-cover" loading="lazy" />
             ) : (
-              <span className="text-primary/80">{getInitials(t.name)}</span>
+              <span className="text-primary/70">{getInitials(t.name)}</span>
             )}
           </div>
           
           <div className="min-w-0">
-            <h4 className="font-bold text-base text-foreground truncate flex items-center gap-2">
+            <h4 className="font-bold text-sm md:text-base text-foreground truncate flex items-center gap-1.5">
               {t.name}
-              {t.relationship === 'client' && <BadgeCheck className="h-4 w-4 text-primary fill-primary/10 shrink-0" />}
+              {t.relationship === 'client' && <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/10 shrink-0" />}
             </h4>
-            <p className="text-sm text-muted-foreground truncate font-medium">
+            <p className="text-xs text-muted-foreground truncate font-medium">
               {t.role_or_company || label}
             </p>
           </div>
         </div>
         
-        {/* Icono de Cita (Sutil y elegante) */}
-        <Quote className="h-8 w-8 text-primary/10 fill-primary/5 shrink-0" />
+        <Quote className="h-6 w-6 text-primary/10 fill-primary/5 shrink-0" />
       </div>
 
-      {/* RATING (Estrellas Azules) */}
-      <div className="flex gap-1 mb-4">
+      {/* Stars */}
+      <div className="flex gap-0.5 mb-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star 
             key={i} 
-            // Uso del color PRIMARY (Azul) para las estrellas
-            className={cn("h-5 w-5", i < t.rating ? "text-primary fill-primary" : "text-muted/30 fill-muted/10")} 
+            className={cn("h-3.5 w-3.5", i < t.rating ? "text-primary fill-primary" : "text-muted/30 fill-muted/10")} 
           />
         ))}
       </div>
 
-      {/* CONTENT */}
-      <blockquote className="text-base text-foreground/90 leading-relaxed mb-8 italic line-clamp-4 min-h-[5.5rem] relative z-10 font-normal">
+      {/* Content */}
+      <blockquote className="text-sm text-foreground/80 leading-relaxed mb-6 italic line-clamp-4 min-h-[4.5rem]">
         &quot;{t.content}&quot;
       </blockquote>
 
-      {/* FOOTER (Limpio, sin borde superior) */}
-      <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground font-medium">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 text-secondary-foreground/80">
-          <span className={cn("h-1.5 w-1.5 rounded-full", t.relationship === 'client' ? "bg-primary" : "bg-muted-foreground/50")} />
-          <span className="uppercase tracking-wider text-[10px]">
-            {label}
-          </span>
+      {/* Footer */}
+      <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground font-medium pt-4 border-t border-border/30">
+        <div className="flex items-center gap-1.5">
+          <span className={cn("h-1.5 w-1.5 rounded-full", t.relationship === 'client' ? "bg-primary" : "bg-muted-foreground/30")} />
+          <span className="uppercase tracking-wider opacity-80">{label}</span>
         </div>
         
-        <div className="flex items-center gap-1.5 opacity-80 font-mono text-[10px]">
-          <Calendar className="h-3.5 w-3.5" />
-          {new Date(t.created_at).toLocaleString("es-AR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "2-digit", // Año corto (26) es más moderno
-            hour: "2-digit",
-            minute: "2-digit"
-          })} hs
+        <div className="flex items-center gap-1 opacity-60">
+          <Calendar className="h-3 w-3" />
+          {new Date(t.created_at).toLocaleDateString("es-AR", { month: 'short', year: '2-digit' })}
         </div>
       </div>
     </div>

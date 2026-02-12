@@ -120,17 +120,21 @@ export default function TestimonialsPageClient({
         </section>
 
         <section className="py-16 md:py-20 container px-4 max-w-6xl mx-auto space-y-10">
+
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold">Lo que dicen otros</h2>
             <div className="h-px flex-1 bg-border" />
           </div>
+
           {children}
         </section>
+
       </div>
 
       <TestimonialWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
+
         projects={projects}
       />
     </>

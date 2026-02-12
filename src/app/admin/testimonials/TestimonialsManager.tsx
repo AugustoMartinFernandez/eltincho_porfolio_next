@@ -126,11 +126,16 @@ export default function TestimonialsManager({ initialTestimonials }: { initialTe
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm">{t.name}</h4>
-                    <p className="text-xs text-muted-foreground">{t.role_or_company}</p>
-                    <div className="mt-2 inline-flex px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-secondary border border-border text-foreground/70">
-                      {t.relationship}
+                    <p className="font-semibold">{t.name}</p>
+                    
+                    {/* Mostrar Cargo y Relación juntos */}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                       <span className="capitalize">{t.relationship}</span>
+                       {t.role_or_company && <span>• {t.role_or_company}</span>}
                     </div>
+
+                    {/* Mostrar Email (Estilo azul para destacar que es privado/admin info) */}
+                    <p className="text-xs text-blue-500 mt-1 select-all">{t.email}</p>
                   </div>
                 </div>
 
