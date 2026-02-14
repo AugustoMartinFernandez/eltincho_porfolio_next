@@ -31,8 +31,8 @@ export const dynamic = "force-dynamic"; // Deshabilita caché estático
 export const revalidate = 0; // Revalidación inmediata
 
 export const metadata: Metadata = {
-  title: "Sobre Mí | Ingeniero de Software",
-  description: "Trayectoria profesional, experiencia técnica y educación.",
+  title: "Perfil Técnico | Software Developer",
+  description: "Explorá mi background técnico: lenguajes, frameworks, proyectos y trayectoria como desarrollador de software.",
 };
 
 async function createClient() {

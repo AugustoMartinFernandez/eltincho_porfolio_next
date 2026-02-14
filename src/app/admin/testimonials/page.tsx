@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { MessageSquareHeart } from "lucide-react";
-import TestimonialsManager from "./TestimonialsManager"; // <--- ESTO ES LO CORRECTO
+import TestimonialsManager from "./TestimonialsManager";
 import { Testimonial } from "@/types/testimonial";
 
 export const dynamic = "force-dynamic";

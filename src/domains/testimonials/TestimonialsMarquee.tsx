@@ -137,14 +137,12 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
   const label = roleLabels[t.relationship] || "Visitante";
 
   return (
-    <div className={cn(
-      "relative shrink-0 rounded-2xl border bg-card p-6 md:p-8 transition-all select-none flex flex-col h-full group snap-center",
-      // RESPONSIVE SIZING: 
-      // Mobile: 85% del ancho para ver 'peek' del siguiente. Desktop: fijo óptimo.
+<div className={cn(
+      "relative shrink-0 rounded-2xl border bg-card p-6 md:p-8 transition-all select-none flex flex-col h-[320px] md:h-[340px] group snap-center",
       "w-[85vw] max-w-[350px] md:w-[400px]", 
       isFeatured 
-        ? "border-primary/60 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.2)] bg-gradient-to-b from-card to-primary/[0.02]" 
-        : "border-border/60 shadow-sm hover:shadow-md hover:border-primary/30"
+        ? "border-primary/60 shadow-2xl bg-gradient-to-b from-card to-primary/[0.02]" 
+        : "border-border/50 shadow-lg hover:shadow-xl hover:border-primary/30"
     )}>
       
       {/* Badge Destacado */}
@@ -156,7 +154,7 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
       )}
       
       {/* Header Compacto */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold text-sm md:text-base border border-border group-hover:border-primary/30 transition-colors">
             {t.avatar_url ? (
@@ -182,7 +180,7 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
       </div>
 
       {/* Stars */}
-      <div className="flex gap-0.5 mb-3">
+      <div className="flex gap-0.5 mb-3 shrink-0">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star 
             key={i} 
@@ -192,12 +190,12 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
       </div>
 
       {/* Content */}
-      <blockquote className="text-sm text-foreground/80 leading-relaxed mb-6 italic line-clamp-4 min-h-[4.5rem]">
+      <blockquote className="text-sm text-foreground/80 leading-relaxed italic line-clamp-4 overflow-hidden mb-2">
         &quot;{t.content}&quot;
       </blockquote>
 
       {/* Footer */}
-      <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground font-medium pt-4 border-t border-border/30">
+      <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground font-medium pt-4 border-t border-border/30 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className={cn("h-1.5 w-1.5 rounded-full", t.relationship === 'client' ? "bg-primary" : "bg-muted-foreground/30")} />
           <span className="uppercase tracking-wider opacity-80">{label}</span>
@@ -205,7 +203,7 @@ function MarqueeCard({ t }: { t: Testimonial & { featured?: boolean } }) {
         
         <div className="flex items-center gap-1 opacity-60">
           <Calendar className="h-3 w-3" />
-          {new Date(t.created_at).toLocaleDateString("es-AR", { month: 'short', year: '2-digit' })}
+         {new Date(t.created_at).toLocaleDateString("es-AR", { day: 'numeric', month: 'short', year: '2-digit' })}
         </div>
       </div>
     </div>

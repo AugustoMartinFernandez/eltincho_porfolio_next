@@ -1,25 +1,50 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { Metadata } from "next";
 import ProjectCard from "@/domains/projects/ProjectCard";
 import { Project } from "@/types/project";
 import { AlertCircle } from "lucide-react";
+
+// --- METADATOS PROFESIONALES ---
+export const metadata: Metadata = {
+  title: "Proyectos y Portafolio | Software Developer",
+  description: "Explorá mis proyectos más destacados, soluciones tecnológicas y arquitectura de software.",
+};
+
+// --- CLIENTE DE SUPABASE (SINTAXIS MODERNA) ---
+async function createClient() {
+  const cookieStore = await cookies();
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Este catch es intencional. Next.js no permite escribir cookies 
+            // desde un Server Component, el middleware lo maneja.
+          }
+        },
+      },
+    }
+  );
+}
 
 // Convertimos el componente en async para hacer fetching del lado del servidor (RSC)
 export default async function ProjectsPage() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("portfolio_session")?.value;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  // 0. Instanciamos el cliente moderno
+  const supabase = await createClient();
   
   // 1. Llamada real a Supabase
   const { data: projects, error } = await supabase

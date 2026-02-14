@@ -1,10 +1,35 @@
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-// Corregimos el import para buscarlo en la carpeta correcta de dominios
+import { createServerClient } from "@supabase/ssr";
 import ProjectDetail from "@/domains/projects/ProjectDetail"; 
 import { Project } from "@/types/project";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
+
+// --- CLIENTE DE SUPABASE (SINTAXIS MODERNA) ---
+async function createClient() {
+  const cookieStore = await cookies();
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Este catch es intencional para Server Components
+          }
+        },
+      },
+    }
+  );
+}
 
 // En Next.js 15, params es una Promesa
 interface PageProps {
@@ -13,8 +38,8 @@ interface PageProps {
 
 // 1. Generar Metadata dinámica para SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  // Await params antes de usar
   const { slug } = await params;
+  const supabase = await createClient(); // Instancia SSR
 
   const { data: project } = await supabase
     .from("projects")
@@ -30,7 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${project.title} | TinchoDev`,
+    title: `${project.title} | Software Developer`, // SEO Estandarizado
     description: project.summary,
     openGraph: {
       title: project.title,
@@ -48,10 +73,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 // 2. Página Principal
 export default async function ProjectDetailPage({ params }: PageProps) {
-  // Await params es OBLIGATORIO en Next.js 15
   const { slug } = await params;
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("portfolio_session")?.value;
+  
+  const supabase = await createClient(); // Instancia SSR
   
   // Consulta al proyecto con filtros de visibilidad
   const { data: project, error } = await supabase
@@ -61,7 +87,6 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     .eq("visible", true)
     .single();
 
-  // Mejora en la depuración: Si hay error o no existe, logueamos el detalle técnico
   if (error || !project) {
     console.error("Error fetching project:", {
       message: error?.message,

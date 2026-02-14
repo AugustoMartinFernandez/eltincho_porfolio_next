@@ -134,8 +134,8 @@ export default function TestimonialsPageClient({
       <TestimonialWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-
         projects={projects}
+        defaultRole={preSelectedRole}
       />
     </>
   );

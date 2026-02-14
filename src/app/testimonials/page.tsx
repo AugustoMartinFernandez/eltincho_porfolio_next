@@ -5,20 +5,43 @@ import TestimonialsWall from "@/domains/testimonials/TestimonialsWall";
 import TestimonialsPageClient from "./TestimonialsPageClient"; 
 
 export const metadata: Metadata = {
-  title: "Testimonios Positivos | TinchoDev",
-  description: "Lo que dicen colegas y clientes sobre mi trabajo.",
+  title: "Testimonios | Software Developer",
+  description: "Experiencias y referencias de clientes y colegas trabajando conmigo en el desarrollo de software.",
 };
 export const dynamic = "force-dynamic";
 
-export default async function TestimonialsPage() {
+// 1. Cliente de Supabase extraído y actualizado a la sintaxis moderna
+async function createClient() {
   const cookieStore = await cookies();
-  // Cliente de Supabase para Servidor (Lectura)
-  const supabase = createServerClient(
+  
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Este catch es intencional. Next.js no permite escribir cookies 
+            // desde un Server Component, el middleware lo maneja.
+          }
+        },
+      },
+    }
   );
+}
 
+export default async function TestimonialsPage() {
+  // 2. Instanciamos el cliente
+  const supabase = await createClient();
+
+  // 3. Ejecutamos la consulta con la instancia creada
   const [projectsRes] = await Promise.all([
     supabase
     .from("projects")
