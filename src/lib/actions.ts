@@ -35,6 +35,14 @@ async function createAuthClient() {
   );
 }
 
+function safeError(error: unknown) {
+  try {
+    return JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2);
+  } catch {
+    return String(error);
+  }
+}
+
 // --- LOGGING HELPERS ---
 
 async function recordSecurityEvent(eventType: string, details: any = {}) {
@@ -253,15 +261,39 @@ export async function toggleProjectLike(projectId: string) {
 
 // --- SHARES (Público) ---
 export async function incrementProjectShares(projectId: string) {
-  const { error } = await supabase.rpc("increment_share_count", {
+  let { error } = await supabase.rpc("increment_share_count", {
     row_id: projectId,
   });
 
-  if (error) {
-    console.error("Error incrementing shares:", error);
-    return { success: false };
+  // Compatibilidad con firmas RPC que usan project_id en lugar de row_id
+  if (
+    error &&
+    (error.code === "PGRST202" ||
+      /increment_share_count/i.test(error.message || ""))
+  ) {
+    const retry = await supabase.rpc("increment_share_count", {
+      project_id: projectId,
+    });
+    error = retry.error;
   }
-  return { success: true };
+
+  if (error) {
+    console.error("Error incrementing shares:", safeError(error));
+    return { success: false, error: safeError(error) };
+  }
+
+  const { data: updatedProject, error: fetchError } = await supabase
+    .from("projects")
+    .select("share_count")
+    .eq("id", projectId)
+    .single();
+
+  if (fetchError) {
+    console.error("Error fetching updated share count:", safeError(fetchError));
+    return { success: true };
+  }
+
+  return { success: true, shareCount: updatedProject?.share_count ?? 0 };
 }
 
 // --- TESTIMONIOS (Creación Pública) ---

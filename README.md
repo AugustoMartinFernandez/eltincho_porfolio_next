@@ -1,17 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Portfolio
 
-## Getting Started
+Portafolio personal — React + Next.js (o Vite si aplica) con Supabase/Umami.
 
-First, run the development server:
+## Stack
+- Next.js (o React + Vite)
+- Tailwind CSS
+- Supabase (Firestore equivalente usado para datos)
+- Vitest + React Testing Library (tests)
+- Deployment: Vercel / Firebase Hosting (ajustar según uso)
+
+## Requisitos
+- Node.js >= 18
+- npm
+
+## Instalación
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd <repo>
+npm install
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

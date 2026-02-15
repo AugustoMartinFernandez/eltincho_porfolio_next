@@ -5,6 +5,14 @@ import { Project } from "@/types/project";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
 
+function safeError(error: unknown) {
+  try {
+    return JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2);
+  } catch {
+    return String(error);
+  }
+}
+
 // --- CLIENTE DE SUPABASE (SINTAXIS MODERNA) ---
 async function createClient() {
   const cookieStore = await cookies();
@@ -88,12 +96,10 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     .single();
 
   if (error || !project) {
-    console.error("Error fetching project:", {
-      message: error?.message,
-      code: error?.code,
-      details: error?.details,
-      attemptedSlug: slug
-    }); 
+    console.error(
+      `Error fetching project for slug "${slug}":`,
+      safeError(error ?? new Error("unknown error")),
+    );
     notFound();
   }
 

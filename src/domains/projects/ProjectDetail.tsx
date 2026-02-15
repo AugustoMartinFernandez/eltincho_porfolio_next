@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useOptimistic, useTransition } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { 
@@ -76,11 +76,7 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
           <div className="space-y-8 border-b border-border pb-10 mb-10">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap gap-2">
-                {project.tags.map(tag => (
-                  <span key={tag} className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-primary bg-primary/10 rounded-full border border-primary/20">
-                    {tag}
-                  </span>
-                ))}
+                <ProjectTags tags={project.tags} />
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-secondary/50 px-3 py-1 rounded-full">
                 <Calendar className="h-3.5 w-3.5" />
@@ -177,11 +173,7 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
   const [isNativeShare, setIsNativeShare] = useState(false);
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState("");
-  const [_, startTransition] = useTransition();
-  const [optimisticShares, addOptimisticShare] = useOptimistic(
-    initialShareCount,
-    (state, amount: number) => state + amount
-  );
+  const [shareCount, setShareCount] = useState(initialShareCount);
   useEffect(() => {
     setUrl(window.location.href);
     if (typeof navigator !== 'undefined' && 'share' in navigator) {
@@ -189,11 +181,29 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
     }
   }, []);
 
-  const trackShare = () => {
-    startTransition(async () => {
-      addOptimisticShare(1); 
-      await incrementProjectShares(projectId);
-    });
+  useEffect(() => {
+    setShareCount(initialShareCount);
+  }, [projectId]);
+
+  const trackShare = async () => {
+    try {
+      const result = await incrementProjectShares(projectId);
+
+      if (!result?.success) {
+        return false;
+      }
+
+      if (typeof result.shareCount === "number") {
+        setShareCount(result.shareCount);
+      } else {
+        setShareCount((prev) => prev + 1);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error tracking share:", error);
+      return false;
+    }
   };
   const handleShare = async () => {
     if (isNativeShare) {
@@ -203,7 +213,7 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
           text: summary,
           url: url,
         });
-        trackShare();
+        await trackShare();
       } catch (err) {
         console.log("Usuario canceló compartir o error:", err);
       }
@@ -213,26 +223,34 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
   };
   const handleCopy = async () => {
     try {
+      await trackShare();
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      trackShare(); // Registrar copia
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Error al copiar", err);
     }
   };
-  const handleSocialClick = () => {
-    trackShare(); 
+  const handleSocialClick = async (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    targetUrl: string,
+  ) => {
+    e.preventDefault();
+    await trackShare();
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
   };
 
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(`Mira este proyecto: ${title}`);
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+  const whatsappUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
 
   return (
     <>
       <div className="flex items-center gap-3 border-l border-border pl-6 ml-auto md:ml-0">
         <div className="flex flex-col items-end">
-           <span className="text-xs font-bold text-foreground">{optimisticShares}</span>
+           <span className="text-xs font-bold text-foreground">{shareCount}</span>
            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Shares</span>
         </div>
         <Button 
@@ -269,20 +287,20 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`} target="_blank" rel="noreferrer"
-                     onClick={handleSocialClick}
+                  <a href={linkedinUrl} target="_blank" rel="noreferrer"
+                     onClick={(e) => handleSocialClick(e, linkedinUrl)}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-[#0077b5]/10 hover:text-[#0077b5] transition-colors border border-transparent hover:border-[#0077b5]/20">
                     <Linkedin className="h-6 w-6" />
                     <span className="text-xs font-medium">LinkedIn</span>
                   </a>
-                  <a href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`} target="_blank" rel="noreferrer"
-                     onClick={handleSocialClick}
+                  <a href={twitterUrl} target="_blank" rel="noreferrer"
+                     onClick={(e) => handleSocialClick(e, twitterUrl)}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground transition-colors border border-transparent hover:border-foreground/20">
                     <Twitter className="h-6 w-6" />
                     <span className="text-xs font-medium">X / Twitter</span>
                   </a>
-                  <a href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`} target="_blank" rel="noreferrer"
-                     onClick={handleSocialClick}
+                  <a href={whatsappUrl} target="_blank" rel="noreferrer"
+                     onClick={(e) => handleSocialClick(e, whatsappUrl)}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-[#25D366]/10 hover:text-[#25D366] transition-colors border border-transparent hover:border-[#25D366]/20">
                     <MessageCircle className="h-6 w-6" />
                     <span className="text-xs font-medium">WhatsApp</span>
@@ -305,5 +323,29 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export function ProjectTags({ tags }: { tags?: string[] }) {
+  if (Array.isArray(tags) && tags.length > 0) {
+    return (
+      <>
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-primary bg-primary/10 rounded-full border border-primary/20"
+            role="listitem"
+          >
+            {tag}
+          </span>
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <span className="no-tags" aria-label="sin-etiquetas">
+      Sin etiquetas
+    </span>
   );
 }
