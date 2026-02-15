@@ -24,12 +24,9 @@ interface ProjectDetailProps {
 
 export default function ProjectDetail({ project, initialLikes, initialHasLiked }: ProjectDetailProps) {
   const { scrollY, scrollYProgress } = useScroll();
-  // Parallax: La imagen se mueve al 50% de la velocidad del scroll
   const y = useTransform(scrollY, [0, 1000], [0, 500]);
-  // Opacidad: Se desvanece suavemente al subir el contenido
   const opacity = useTransform(scrollY, [0, 600], [1, 0.2]);
-  
-  // Barra de progreso suavizada
+
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
@@ -38,17 +35,11 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
 
   return (
     <article className="min-h-screen bg-background animate-in fade-in duration-700">
-      
-      {/* Barra de Progreso de Lectura */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-primary z-100 origin-left"
         style={{ scaleX }}
       />
-      
-      {/* 1. PARALLAX HEADER (Solo Imagen) */}
       <header className="relative h-[50vh] md:h-[65vh] lg:h-[75vh] w-full overflow-hidden flex items-start justify-center bg-muted/20">
-        
-        {/* Botón Volver Flotante (Siempre visible) */}
         <div className="absolute top-6 left-4 md:left-8 z-20">
           <Link 
             href="/projects" 
@@ -58,41 +49,31 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
             <span>Volver</span>
           </Link>
         </div>
-
-        {/* Capa de Imagen con Framer Motion */}
         <motion.div 
           style={{ y, opacity }}
           className="relative w-full h-full"
         >
           {project.cover_url ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={project.cover_url} 
                 alt={project.title} 
                 className="w-full h-full object-cover"
               />
-              {/* Overlay decorativo inferior para fusionar con el contenido */}
               <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/60" />
             </>
           ) : (
-            /* Fallback Abstracto */
             <div className="w-full h-full bg-secondary/5 flex items-center justify-center relative overflow-hidden">
                <div className="absolute inset-0 bg-linear-to-tr from-primary/10 via-transparent to-blue-500/10" />
                <Layers className="w-24 h-24 text-muted-foreground/20" />
             </div>
           )}
         </motion.div>
-      </header>
 
-      {/* 2. CONTENIDO TIPO "HOJA FLOTANTE" */}
+  </header>
       <main className="relative z-10 -mt-20 md:-mt-32 container mx-auto px-4 pb-20">
         <div className="bg-background rounded-3xl shadow-2xl border border-border/50 p-6 md:p-10 lg:p-16 max-w-5xl mx-auto">
-          
-          {/* HEADER DEL PROYECTO */}
           <div className="space-y-8 border-b border-border pb-10 mb-10">
-            
-            {/* Tags & Date */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap gap-2">
                 {project.tags.map(tag => (
@@ -106,8 +87,6 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
                 {new Date(project.published_at || Date.now()).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
               </div>
             </div>
-
-            {/* Title & Summary */}
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground text-balance">
                 {project.title}
@@ -116,11 +95,7 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
                 {project.summary}
               </p>
             </div>
-
-            {/* Action Bar: Links & Social */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-4">
-              
-              {/* Botones Principales */}
               <div className="flex flex-wrap gap-3 w-full md:w-auto">
                 {project.demo_url && (
                   <a href={project.demo_url} target="_blank" rel="noreferrer" className="flex-1 md:flex-none">
@@ -144,8 +119,6 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
                    />
                 </div>
               </div>
-
-              {/* Botones Compartir con Contador */}
               <ShareMenu 
                 title={project.title} 
                 summary={project.summary} 
@@ -154,11 +127,8 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
               />
             </div>
           </div>
-
-          {/* CUERPO DEL PROYECTO (Grid Layout) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
-            
-            {/* Columna Izquierda: Markdown */}
+
             <div className="lg:col-span-8 order-2 lg:order-1">
               <div className="prose prose-slate dark:prose-invert prose-base md:prose-lg max-w-none
                 prose-headings:font-bold prose-headings:text-foreground
@@ -169,12 +139,8 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
                 prose-blockquote:border-l-primary prose-blockquote:bg-secondary/30 prose-blockquote:py-1 prose-blockquote:pr-2">
                 <ReactMarkdown>{project.description_md}</ReactMarkdown>
               </div>
-
-              {/* Galería de Imágenes */}
               <ProjectGallery images={project.gallery_urls} />
             </div>
-
-            {/* Columna Derecha: Sidebar Sticky */}
             <aside className="lg:col-span-4 order-1 lg:order-2 space-y-8">
               <div className="bg-secondary/20 rounded-2xl p-6 border border-border lg:sticky lg:top-24">
                 <h3 className="font-bold text-sm uppercase tracking-wider text-foreground mb-4 flex items-center gap-2">
@@ -188,7 +154,6 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
                         className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg text-xs font-medium text-foreground shadow-sm hover:border-primary/40 transition-colors select-none"
                       >
                         {tech.icon_url && (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={tech.icon_url} alt="" className="h-4 w-4 object-contain" />
                         )}
                         {tech.name}
@@ -207,37 +172,29 @@ export default function ProjectDetail({ project, initialLikes, initialHasLiked }
     </article>
   );
 }
-
-// --- SUBCOMPONENTE: Menú de Compartir ---
 function ShareMenu({ title, summary, projectId, initialShareCount }: { title: string, summary: string, projectId: string, initialShareCount: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isNativeShare, setIsNativeShare] = useState(false);
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState("");
   const [_, startTransition] = useTransition();
-
-  // Optimistic UI para el contador de compartidos
   const [optimisticShares, addOptimisticShare] = useOptimistic(
     initialShareCount,
     (state, amount: number) => state + amount
   );
-
   useEffect(() => {
     setUrl(window.location.href);
-    // Detectar soporte de Web Share API
     if (typeof navigator !== 'undefined' && 'share' in navigator) {
       setIsNativeShare(true);
     }
   }, []);
 
-  // Función unificada para registrar el compartido
   const trackShare = () => {
     startTransition(async () => {
-      addOptimisticShare(1); // Actualización visual inmediata
-      await incrementProjectShares(projectId); // Actualización en servidor
+      addOptimisticShare(1); 
+      await incrementProjectShares(projectId);
     });
   };
-
   const handleShare = async () => {
     if (isNativeShare) {
       try {
@@ -246,7 +203,7 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
           text: summary,
           url: url,
         });
-        trackShare(); // Registrar si se compartió con éxito nativamente
+        trackShare();
       } catch (err) {
         console.log("Usuario canceló compartir o error:", err);
       }
@@ -254,7 +211,6 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
       setIsOpen(true);
     }
   };
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -265,24 +221,20 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
       console.error("Error al copiar", err);
     }
   };
-
   const handleSocialClick = () => {
-    trackShare(); // Registrar clic en redes sociales
+    trackShare(); 
   };
 
-  // Enlaces para el modal de escritorio
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(`Mira este proyecto: ${title}`);
 
   return (
     <>
       <div className="flex items-center gap-3 border-l border-border pl-6 ml-auto md:ml-0">
-        {/* Contador de Compartidos */}
         <div className="flex flex-col items-end">
            <span className="text-xs font-bold text-foreground">{optimisticShares}</span>
            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Shares</span>
         </div>
-
         <Button 
           variant="ghost" 
           onClick={handleShare}
@@ -293,11 +245,9 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
         </Button>
       </div>
 
-      {/* Modal Fallback para Desktop */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -305,8 +255,6 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
               onClick={() => setIsOpen(false)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
-            
-            {/* Modal Content */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -320,7 +268,6 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
                     <X className="h-5 w-5 text-muted-foreground" />
                   </button>
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`} target="_blank" rel="noreferrer"
                      onClick={handleSocialClick}
@@ -328,28 +275,24 @@ function ShareMenu({ title, summary, projectId, initialShareCount }: { title: st
                     <Linkedin className="h-6 w-6" />
                     <span className="text-xs font-medium">LinkedIn</span>
                   </a>
-                  
                   <a href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`} target="_blank" rel="noreferrer"
                      onClick={handleSocialClick}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground transition-colors border border-transparent hover:border-foreground/20">
                     <Twitter className="h-6 w-6" />
                     <span className="text-xs font-medium">X / Twitter</span>
                   </a>
-
                   <a href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`} target="_blank" rel="noreferrer"
                      onClick={handleSocialClick}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-[#25D366]/10 hover:text-[#25D366] transition-colors border border-transparent hover:border-[#25D366]/20">
                     <MessageCircle className="h-6 w-6" />
                     <span className="text-xs font-medium">WhatsApp</span>
                   </a>
-
                   <button onClick={handleCopy}
                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 hover:bg-primary/10 hover:text-primary transition-colors border border-transparent hover:border-primary/20">
                     {copied ? <Check className="h-6 w-6" /> : <Copy className="h-6 w-6" />}
                     <span className="text-xs font-medium">{copied ? "Copiado" : "Copiar Link"}</span>
                   </button>
                 </div>
-
                 <div className="pt-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground truncate font-mono">
                     <LinkIcon className="h-3 w-3 shrink-0" />

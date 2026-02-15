@@ -46,42 +46,28 @@ export default function TestimonialWizard({
     createTestimonial,
     initialState,
   );
-
-  // --- ESTADOS DE FLUJO ---
   const [step, setStep] = useState<"selection" | "form">("selection");
-
-  // --- ESTADOS DEL FORMULARIO ---
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [compressedFile, setCompressedFile] = useState<File | null>(null);
   const [rating, setRating] = useState(5);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isCompressing, setIsCompressing] = useState(false);
-
-  // LOGICA DE ROLES: Separamos el ENUM técnico del Cargo visible
   const [selectedEnum, setSelectedEnum] = useState("");
   const [roleOrCompany, setRoleOrCompany] = useState("");
-
   const [charCount, setCharCount] = useState(0);
-
-  // Efecto: Cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       setStep("selection");
-      // Limpiamos estados al abrir para evitar datos viejos
       if (!defaultRole) {
         setSelectedEnum("");
         setRoleOrCompany("");
       }
     }
   }, [isOpen, defaultRole]);
-
-  // Función para manejar la selección de rol
   const handleRoleSelect = (roleEnum: string) => {
     setSelectedEnum(roleEnum);
     setStep("form");
   };
-
-  // Efecto: Barra de Progreso
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPending) {
@@ -99,8 +85,6 @@ export default function TestimonialWizard({
     }
     return () => clearInterval(interval);
   }, [isPending]);
-
-  // Efecto: Cierre automático
   useEffect(() => {
     if (state.success) {
       const timer = setTimeout(() => {
@@ -126,8 +110,6 @@ export default function TestimonialWizard({
       setStep("selection");
     }, 300);
   };
-
-  // --- LÓGICA DE OPTIMIZACIÓN ---
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -180,7 +162,6 @@ export default function TestimonialWizard({
       setIsCompressing(false);
     }
   };
-
   const handleFormAction = (formData: FormData) => {
     if (isCompressing) {
       toast.warning("Optimizando imagen...");
@@ -203,7 +184,6 @@ export default function TestimonialWizard({
             className="relative w-full max-w-lg bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Común */}
             <div className="flex items-center justify-between p-6 border-b border-border/40 bg-muted/20 shrink-0">
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -227,7 +207,6 @@ export default function TestimonialWizard({
 
             <div className="p-6 overflow-y-auto custom-scrollbar relative">
               {step === "selection" ? (
-                // --- PASO 1: SELECCIÓN ---
                 <div className="grid gap-4">
                   <button
                     onClick={() => handleRoleSelect("client")}
@@ -280,7 +259,7 @@ export default function TestimonialWizard({
                     </div>
                   </button>
                 </div>
-              ) : // --- PASO 2: FORMULARIO ---
+              ) : 
               !state.success ? (
                 <motion.form
                   initial={{ opacity: 0, x: 20 }}
@@ -295,8 +274,6 @@ export default function TestimonialWizard({
                     tabIndex={-1}
                     autoComplete="off"
                   />
-
-                  {/* INPUT OCULTO: Envía 'client', 'visitor', etc. */}
                   <input
                     type="hidden"
                     name="relationship"
@@ -377,8 +354,6 @@ export default function TestimonialWizard({
                       />
                     </div>
                   </div>
-
-                  {/* INPUT VISIBLE: Cargo o Empresa */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground/80">
                       Cargo o Empresa (Opcional)

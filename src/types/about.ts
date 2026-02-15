@@ -5,11 +5,9 @@ export interface SocialLinks {
   instagram?: string;
   facebook?: string;
   tiktok?: string;
-  twitter?: string; 
+  twitter?: string;
 }
-
-export type WorkStatus = 'closed' | 'open_to_work' | 'hiring';
-
+export type WorkStatus = "closed" | "open_to_work" | "hiring";
 export interface AboutMe {
   id: string;
   full_name: string;
@@ -20,7 +18,7 @@ export interface AboutMe {
   cv_url: string;
   available_for_work: boolean;
   work_status: WorkStatus;
-  show_experience: boolean; // <--- NUEVO CAMPO
+  show_experience: boolean;
   social_links: SocialLinks;
 }
 export interface Experience {
@@ -32,7 +30,6 @@ export interface Experience {
   description_md: string;
   visible: boolean;
   current: boolean;
-  // tech_stack?: string[]; 
 }
 export interface Education {
   id: string;
@@ -44,8 +41,13 @@ export interface Education {
   current: boolean;
   certificate_url?: string;
 }
-export type TechCategory = 'frontend' | 'backend' | 'database' | 'tool' | 'infrastructure';
-export type TechRank = 'primary' | 'secondary' | 'experimental';
+export type TechCategory =
+  | "frontend"
+  | "backend"
+  | "database"
+  | "tool"
+  | "infrastructure";
+export type TechRank = "primary" | "secondary" | "experimental";
 
 export interface Technology {
   id: string;

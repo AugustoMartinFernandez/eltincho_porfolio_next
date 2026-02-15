@@ -1,9 +1,7 @@
--- Habilitar extensión para UUIDs si no existe
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- 1. TABLA SINGLETON: ABOUT_ME
 CREATE TABLE IF NOT EXISTS about_me (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
     full_name TEXT NOT NULL,
     title TEXT NOT NULL,
     short_bio_md TEXT,
@@ -15,12 +13,10 @@ CREATE TABLE IF NOT EXISTS about_me (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Asegurar que solo haya una fila (Singleton Pattern en DB)
-CREATE UNIQUE INDEX IF NOT EXISTS one_row_only_uidx ON about_me((true));
-
+CREATE UNIQUE INDEX IF NOT EXISTS one_row_only_uidx ON about_me ((true));
 -- 2. TABLA: EXPERIENCE
 CREATE TABLE IF NOT EXISTS experience (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
     company_name TEXT NOT NULL,
     role_title TEXT NOT NULL,
     start_date DATE NOT NULL,
@@ -31,10 +27,9 @@ CREATE TABLE IF NOT EXISTS experience (
     order_index INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- 3. TABLA: EDUCATION
 CREATE TABLE IF NOT EXISTS education (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
     institution_name TEXT NOT NULL,
     degree_title TEXT NOT NULL,
     start_date DATE NOT NULL,
@@ -43,28 +38,52 @@ CREATE TABLE IF NOT EXISTS education (
     order_index INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- 4. POLÍTICAS DE SEGURIDAD (RLS)
 ALTER TABLE about_me ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE experience ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE education ENABLE ROW LEVEL SECURITY;
-
 -- Lectura pública (Cualquiera puede ver lo visible)
-CREATE POLICY "Public Read About" ON about_me FOR SELECT USING (true);
-CREATE POLICY "Public Read Experience" ON experience FOR SELECT USING (visible = true);
-CREATE POLICY "Public Read Education" ON education FOR SELECT USING (visible = true);
+CREATE POLICY "Public Read About" ON about_me FOR
+SELECT USING (true);
 
--- Escritura solo Admin (Authenticated Users)
+CREATE POLICY "Public Read Experience" ON experience FOR
+SELECT USING (visible = true);
+
+CREATE POLICY "Public Read Education" ON education FOR
+SELECT USING (visible = true);
 -- Asumimos que tu app solo permite login al admin. Si tienes usuarios públicos, añade check de rol.
-CREATE POLICY "Admin Manage About" ON about_me FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admin Manage Experience" ON experience FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admin Manage Education" ON education FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin Manage About" ON about_me FOR ALL TO authenticated USING (true)
+WITH
+    CHECK (true);
 
--- 5. BUCKET DE STORAGE (Si no existe)
-INSERT INTO storage.buckets (id, name, public) VALUES ('portfolio', 'portfolio', true) ON CONFLICT DO NOTHING;
+CREATE POLICY "Admin Manage Experience" ON experience FOR ALL TO authenticated USING (true)
+WITH
+    CHECK (true);
 
--- Políticas de Storage
-CREATE POLICY "Public Access Portfolio Images" ON storage.objects FOR SELECT USING ( bucket_id = 'portfolio' );
-CREATE POLICY "Admin Upload Portfolio Images" ON storage.objects FOR INSERT TO authenticated WITH CHECK ( bucket_id = 'portfolio' );
-CREATE POLICY "Admin Update Portfolio Images" ON storage.objects FOR UPDATE TO authenticated USING ( bucket_id = 'portfolio' );
-CREATE POLICY "Admin Delete Portfolio Images" ON storage.objects FOR DELETE TO authenticated USING ( bucket_id = 'portfolio' );
+CREATE POLICY "Admin Manage Education" ON education FOR ALL TO authenticated USING (true)
+WITH
+    CHECK (true);
+
+INSERT INTO
+    storage.buckets (id, name, public)
+VALUES (
+        'portfolio',
+        'portfolio',
+        true
+    )
+ON CONFLICT DO NOTHING;
+
+CREATE POLICY "Public Access Portfolio Images" ON storage.objects FOR
+SELECT USING (bucket_id = 'portfolio');
+
+CREATE POLICY "Admin Upload Portfolio Images" ON storage.objects FOR INSERT TO authenticated
+WITH
+    CHECK (bucket_id = 'portfolio');
+
+CREATE POLICY "Admin Update Portfolio Images" ON storage.objects
+FOR UPDATE
+    TO authenticated USING (bucket_id = 'portfolio');
+
+CREATE POLICY "Admin Delete Portfolio Images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'portfolio');
