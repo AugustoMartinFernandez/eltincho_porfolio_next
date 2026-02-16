@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient"; // Cliente público (para crear)
 import { createServerClient } from "@supabase/ssr"; // Cliente privado (para administrar)
+import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -35,6 +36,30 @@ async function createAuthClient() {
   );
 }
 
+let serviceRoleClient: ReturnType<typeof createClient> | null = null;
+
+function getServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing Supabase server configuration: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.",
+    );
+  }
+
+  if (!serviceRoleClient) {
+    serviceRoleClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+
+  return serviceRoleClient;
+}
+
 function safeError(error: unknown) {
   try {
     return JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2);
@@ -42,6 +67,11 @@ function safeError(error: unknown) {
     return String(error);
   }
 }
+
+type LogsQueryResult<T> = {
+  data: T[];
+  error: string | null;
+};
 
 // --- LOGGING HELPERS ---
 
@@ -55,7 +85,7 @@ async function recordSecurityEvent(eventType: string, details: any = {}) {
 
     // Usamos el cliente público asumiendo que la tabla permite inserts anónimos
     // o usamos un cliente con privilegios si estuviera disponible.
-    await supabase.from("security_logs").insert({
+    const { error } = await supabase.from("security_logs").insert({
       event_type: eventType,
       email: email,
       ip_address: ipAddress,
@@ -64,6 +94,10 @@ async function recordSecurityEvent(eventType: string, details: any = {}) {
       details: details,
       created_at: new Date().toISOString(),
     });
+
+    if (error) {
+      throw error;
+    }
   } catch (error) {
     console.error("Failed to record security event:", error);
     // No lanzamos el error para no bloquear la acción principal
@@ -77,24 +111,20 @@ async function recordAuditLog(
   oldData: any = null,
   newData: any = null,
 ) {
-  try {
-    const authSupabase = await createAuthClient();
-    const {
-      data: { user },
-    } = await authSupabase.auth.getUser();
+  const serviceSupabase = getServiceRoleClient();
+  const { error } = await (serviceSupabase.from("audit_logs") as any).insert({
+    user_id: null,
+    action,
+    table_name: table,
+    record_id: recordId,
+    old_data: oldData,
+    new_data: newData,
+  });
 
-    if (user) {
-      await authSupabase.from("audit_logs").insert({
-        user_id: user.id,
-        action,
-        table_name: table,
-        record_id: recordId,
-        old_data: oldData,
-        new_data: newData,
-      });
-    }
-  } catch (error) {
-    console.error("Failed to record audit log:", error);
+  if (error) {
+    const serialized = safeError(error);
+    console.error("Failed to record audit log:", serialized);
+    throw new Error(`AUDIT_LOG_WRITE_FAILED: ${error.message ?? serialized}`);
   }
 }
 
@@ -165,7 +195,7 @@ export async function sendContactMessage(
   }
 
   // Log de seguridad (Contacto recibido)
-  recordSecurityEvent("CONTACT_MESSAGE_RECEIVED", { email });
+  await recordSecurityEvent("CONTACT_MESSAGE_RECEIVED", { email });
 
   return { message: "¡Mensaje recibido! Te contactaré pronto.", success: true };
 }
@@ -192,7 +222,7 @@ export async function login(formData: FormData) {
   const isValid = await validateAdminEmail(email);
   if (!isValid) {
     // Registro de intento fallido
-    recordSecurityEvent("LOGIN_FAIL", { email });
+    await recordSecurityEvent("LOGIN_FAIL", { email });
     return { success: false, error: "Credenciales incorrectas." };
   }
 
@@ -205,7 +235,7 @@ export async function login(formData: FormData) {
 
   if (error) {
     // Registro de fallo técnico
-    recordSecurityEvent("LOGIN_FAIL", { email, error: error.message });
+    await recordSecurityEvent("LOGIN_FAIL", { email, error: error.message });
     return {
       success: false,
       error: "Error de autenticación. Intenta nuevamente.",
@@ -213,7 +243,7 @@ export async function login(formData: FormData) {
   }
 
   // Registro de éxito
-  recordSecurityEvent("LOGIN_SUCCESS", { email });
+  await recordSecurityEvent("LOGIN_SUCCESS", { email });
 }
 // --- LIKES (Público - Usa cliente estático) ---
 export async function toggleProjectLike(projectId: string) {
@@ -418,7 +448,7 @@ export async function createTestimonial(
     if (error) throw error;
 
     revalidatePath("/admin/testimonials");
-    recordSecurityEvent("TESTIMONIAL_SUBMITTED", { name, email });
+    await recordSecurityEvent("TESTIMONIAL_SUBMITTED", { name, email });
     return {
       message: "¡Gracias! Tu testimonio está pendiente de aprobación.",
       success: true,
@@ -448,7 +478,7 @@ export async function approveTestimonial(id: string) {
   }
 
   // Audit Log
-  recordAuditLog(
+  await recordAuditLog(
     "APPROVE",
     "testimonials",
     id,
@@ -478,7 +508,7 @@ export async function deleteTestimonial(id: string) {
   }
 
   // Audit Log
-  recordAuditLog("DELETE", "testimonials", id);
+  await recordAuditLog("DELETE", "testimonials", id);
 
   revalidatePath("/admin/testimonials");
   revalidatePath("/");
@@ -502,7 +532,7 @@ export async function toggleFeaturedTestimonial(
     throw new Error("No pudimos actualizar el estado destacado.");
   }
   // Audit Log
-  recordAuditLog(
+  await recordAuditLog(
     "TOGGLE_FEATURED",
     "testimonials",
     id,
@@ -560,7 +590,7 @@ export async function resetPasswordForEmail(email: string) {
   if (!adminEmail || inputEmail !== adminEmail) {
     return { success: false, error: "invalid_email" };
   }
-  recordSecurityEvent("PASSWORD_RESET_REQUEST", { email: inputEmail });
+  await recordSecurityEvent("PASSWORD_RESET_REQUEST", { email: inputEmail });
   const { error } = await supabase.auth.resetPasswordForEmail(inputEmail, {
     redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?next=/update-password`,
   });
@@ -579,7 +609,7 @@ export async function updatePassword(password: string) {
   if (error) {
     return { success: false, error: error.message };
   }
-  recordSecurityEvent("PASSWORD_UPDATE_SUCCESS", {
+  await recordSecurityEvent("PASSWORD_UPDATE_SUCCESS", {
     timestamp: new Date().toISOString(),
   });
   return { success: true };
@@ -601,7 +631,7 @@ export async function resetUmamiMetrics() {
       },
     );
     if (!res.ok) throw new Error("Error al resetear métricas en Umami");
-    recordAuditLog("RESET_METRICS", "umami", "global");
+    await recordAuditLog("RESET_METRICS", "umami", "global");
     revalidatePath("/admin");
     return { success: true };
   } catch (error: any) {
@@ -639,31 +669,37 @@ function parseUserAgent(ua: string) {
       : "Desktop";
   return { browser, os, deviceType };
 }
-export async function getSecurityLogs() {
-  const supabase = await createAuthClient();
-  const { data, error } = await supabase
+export async function getSecurityLogs(): Promise<LogsQueryResult<any>> {
+  const authSupabase = await createAuthClient();
+  const { data, error } = await authSupabase
     .from("security_logs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(50);
   if (error) {
-    console.error("Error fetching security logs:", error);
-    return [];
+    console.error("Error fetching security logs:", safeError(error));
+    return { data: [], error: error.message ?? "Unable to fetch security logs" };
   }
-  return data.map((log: any) => ({
-    ...log,
-    ua_parsed: parseUserAgent(log.user_agent || ""),
-  }));
+  return {
+    data: (data ?? []).map((log: any) => ({
+      ...log,
+      ua_parsed: parseUserAgent(log.user_agent || ""),
+    })),
+    error: null,
+  };
 }
-export async function getAuditLogs() {
-  const supabase = await createAuthClient();
-  const { data, error } = await supabase
+export async function getAuditLogs(): Promise<LogsQueryResult<any>> {
+  const authSupabase = await createAuthClient();
+  const { data, error } = await authSupabase
     .from("audit_logs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(50);
-  if (error) return [];
-  return data;
+  if (error) {
+    console.error("Error fetching audit logs:", safeError(error));
+    return { data: [], error: error.message ?? "Unable to fetch audit logs" };
+  }
+  return { data: data ?? [], error: null };
 }
 // Helper privado para borrar imágenes del Storage
 async function deleteProjectImage(imageUrl: string) {
